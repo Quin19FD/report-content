@@ -15,13 +15,26 @@ interface PlanRow {
 export default function Plan() {
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-  const [activeView, setActiveView] = useState<'GRID' | 'KANBAN'>('GRID');
+  const [activeView, setActiveView] = useState<'SPLIT' | 'GRID' | 'KANBAN'>('SPLIT');
 
   const [rows, setRows] = useState<PlanRow[]>([
     { id: 1, task: 'Phát triển chuỗi Shorts/Reels viral', category: 'Nội Dung', targetReach: '100000', progress: '40', status: 'In Progress', deadline: '2026-09-15', note: 'Tập trung 3s đầu' },
     { id: 2, task: 'Tối ưu lại nhóm Facebook hợp tác', category: 'Kênh & Nhóm', targetReach: '50000', progress: '10', status: 'Planning', deadline: '2026-09-20', note: 'Gửi đề xuất quản trị' },
     { id: 3, task: 'Báo cáo hiệu suất tháng trước', category: 'Báo Cáo', targetReach: '0', progress: '100', status: 'Done', deadline: '2026-09-05', note: 'Đã tổng hợp file PDF' },
   ]);
+
+  // Form State for Adding/Editing Plan
+  const [form, setForm] = useState<PlanRow>({
+    id: 0,
+    task: '',
+    category: 'Nội Dung',
+    targetReach: '10000',
+    progress: '0',
+    status: 'Planning',
+    deadline: '',
+    note: ''
+  });
+  const [editingId, setEditingId] = useState<number | null>(null);
 
   const [isSaving, setIsSaving] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
@@ -51,13 +64,13 @@ export default function Plan() {
     loadData();
   }, [selectedMonth, selectedYear]);
 
-  const savePlan = async () => {
+  const savePlanToBackend = async (newRows: PlanRow[]) => {
     setIsSaving(true);
     try {
       await fetch('/api/plans', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(rows)
+        body: JSON.stringify(newRows)
       });
       showToast("💾 Đã lưu kế hoạch tháng thành công!");
     } catch (err) {
@@ -67,29 +80,54 @@ export default function Plan() {
     }
   };
 
-  const updateRow = (id: number, field: keyof PlanRow, value: string) => {
-    setRows(rows.map(r => r.id === id ? { ...r, [field]: value } : r));
-  };
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.task) return alert("Vui lòng nhập Tên Mục Tiêu / Nhiệm Vụ!");
 
-  const addRow = (initialStatus = 'Planning') => {
-    setRows([...rows, { 
-      id: Date.now(), 
-      task: '', 
+    let updatedRows: PlanRow[];
+    if (editingId) {
+      updatedRows = rows.map(r => r.id === editingId ? { ...form, id: editingId } : r);
+      showToast("🎉 Đã cập nhật mục tiêu!");
+    } else {
+      const newRow = { ...form, id: Date.now() };
+      updatedRows = [...rows, newRow];
+      showToast("🎉 Đã thêm mục tiêu mới vào kế hoạch!");
+    }
+
+    setRows(updatedRows);
+    savePlanToBackend(updatedRows);
+
+    // Reset Form
+    setForm({
+      id: 0,
+      task: '',
       category: 'Nội Dung',
       targetReach: '10000',
-      progress: initialStatus === 'Done' ? '100' : '0', 
-      status: initialStatus, 
+      progress: '0',
+      status: 'Planning',
       deadline: '',
-      note: '' 
-    }]);
-    showToast("➕ Đã thêm mục tiêu chiến lược mới!");
+      note: ''
+    });
+    setEditingId(null);
+  };
+
+  const startEdit = (row: PlanRow) => {
+    setForm(row);
+    setEditingId(row.id);
+    showToast("✏️ Đã tải thông tin lên Form chỉnh sửa!");
+  };
+
+  const updateRowInline = (id: number, field: keyof PlanRow, value: string) => {
+    const updated = rows.map(r => r.id === id ? { ...r, [field]: value } : r);
+    setRows(updated);
   };
 
   const deleteRow = (id: number) => {
-    if (rows.length <= 1) {
-      return setRows([{ id: Date.now(), task: '', category: 'Nội Dung', targetReach: '0', progress: '0', status: 'Planning', deadline: '', note: '' }]);
-    }
-    setRows(rows.filter(r => r.id !== id));
+    if (!confirm("Bạn có chắc muốn xóa mục tiêu này?")) return;
+    const updated = rows.filter(r => r.id !== id);
+    setRows(updated.length > 0 ? updated : [{ id: Date.now(), task: '', category: 'Nội Dung', targetReach: '0', progress: '0', status: 'Planning', deadline: '', note: '' }]);
+    savePlanToBackend(updated);
+    showToast("🗑️ Đã xóa mục tiêu!");
   };
 
   const exportToExcel = () => {
@@ -135,27 +173,33 @@ export default function Plan() {
         </div>
       )}
 
-      {/* HEADER & MONTH SELECTOR */}
+      {/* HEADER & CONTROLS */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-200">
         <div>
           <h1 className="text-3xl font-black text-slate-900 tracking-tight">Kế Hoạch Chiến Lược Tháng</h1>
-          <p className="text-slate-500 text-sm mt-1 font-semibold">Tối ưu mục tiêu • Quản lý tiến độ Kanban & Excel Grid • Tự động lưu trữ</p>
+          <p className="text-slate-500 text-sm mt-1 font-semibold">Nhập chi tiết mục tiêu • Quản lý Form & Bảng Excel / Kanban • Tự động lưu</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          {/* View Switcher: Grid vs Kanban */}
+          {/* View Switcher: Split vs Grid vs Kanban */}
           <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200 font-extrabold text-xs">
             <button 
+              onClick={() => setActiveView('SPLIT')} 
+              className={`px-3.5 py-2 rounded-lg transition flex items-center gap-1.5 ${activeView === 'SPLIT' ? 'bg-sky-600 text-white shadow' : 'text-slate-600 hover:text-slate-900'}`}
+            >
+              <span>✍️</span> Form & Bảng
+            </button>
+            <button 
               onClick={() => setActiveView('GRID')} 
-              className={`px-3.5 py-2 rounded-lg transition flex items-center gap-1.5 ${activeView === 'GRID' ? 'bg-white text-slate-900 shadow' : 'text-slate-600 hover:text-slate-900'}`}
+              className={`px-3.5 py-2 rounded-lg transition flex items-center gap-1.5 ${activeView === 'GRID' ? 'bg-sky-600 text-white shadow' : 'text-slate-600 hover:text-slate-900'}`}
             >
               <span>📊</span> Grid Excel
             </button>
             <button 
               onClick={() => setActiveView('KANBAN')} 
-              className={`px-3.5 py-2 rounded-lg transition flex items-center gap-1.5 ${activeView === 'KANBAN' ? 'bg-white text-slate-900 shadow' : 'text-slate-600 hover:text-slate-900'}`}
+              className={`px-3.5 py-2 rounded-lg transition flex items-center gap-1.5 ${activeView === 'KANBAN' ? 'bg-sky-600 text-white shadow' : 'text-slate-600 hover:text-slate-900'}`}
             >
-              <span>📌</span> Kanban Board
+              <span>📌</span> Kanban
             </button>
           </div>
 
@@ -179,17 +223,9 @@ export default function Plan() {
 
           <button 
             onClick={exportToExcel} 
-            className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl font-black transition text-xs shadow flex items-center gap-1.5"
+            className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl font-black transition text-xs shadow flex items-center gap-1.5"
           >
             <span>📥</span> Xuất Excel
-          </button>
-          
-          <button 
-            onClick={savePlan} 
-            disabled={isSaving}
-            className="bg-sky-600 hover:bg-sky-700 text-white px-5 py-2.5 rounded-xl font-black transition text-xs shadow flex items-center gap-1.5"
-          >
-            <span>💾</span> {isSaving ? 'Đang lưu...' : 'Lưu Kế Hoạch'}
           </button>
         </div>
       </div>
@@ -214,7 +250,7 @@ export default function Plan() {
 
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
           <div>
-            <div className="text-xs font-black text-slate-400 uppercase tracking-wider">Mục Tiêu Reach Tháng</div>
+            <div className="text-xs font-black text-slate-400 uppercase tracking-wider">Target Reach Tháng</div>
             <div className="text-2xl font-black text-indigo-600 mt-1">{totalTargetReach.toLocaleString()}</div>
           </div>
           <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center font-black text-xl">🎯</div>
@@ -231,12 +267,199 @@ export default function Plan() {
         </div>
       </div>
 
-      {/* VIEW MODE 1: EXCEL GRID VIEW */}
+      {/* VIEW MODE 1: FORM & SPLIT VIEW (GIAO DIỆN NHẬP CHI TIẾT) */}
+      {activeView === 'SPLIT' && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          
+          {/* FORM NHẬP CHI TIẾT MỤC TIÊU BÊN TRÁI (5 COLS) */}
+          <form onSubmit={handleFormSubmit} className="lg:col-span-5 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <h2 className="font-black text-base text-slate-900 flex items-center gap-2">
+                <span className="text-lg">✍️</span> 
+                <span>{editingId ? 'Chỉnh Sửa Mục Tiêu' : 'Nhập Chi Tiết Mục Tiêu Mới'}</span>
+              </h2>
+              {editingId && (
+                <button type="button" onClick={() => { setEditingId(null); setForm({ id: 0, task: '', category: 'Nội Dung', targetReach: '10000', progress: '0', status: 'Planning', deadline: '', note: '' }); }} className="text-xs text-slate-500 hover:text-slate-800 underline font-bold">
+                  Hủy
+                </button>
+              )}
+            </div>
+
+            {/* Hạng mục */}
+            <div>
+              <label className="block text-xs font-black text-slate-800 uppercase tracking-wide mb-1.5">Hạng Mục Kế Hoạch</label>
+              <select 
+                className="w-full border border-slate-200 p-3 rounded-xl text-sm font-bold text-slate-900 bg-white"
+                value={form.category}
+                onChange={e => setForm({ ...form, category: e.target.value })}
+              >
+                <option value="Nội Dung">📹 Nội Dung (Shorts/Reels/Video)</option>
+                <option value="Kênh & Nhóm">📘 Kênh & Nhóm Facebook/YT/TikTok</option>
+                <option value="Báo Cáo">📊 Báo Cáo & Số Liệu</option>
+                <option value="Tương Tác">💬 Tương Tác & Chăm Sóc</option>
+                <option value="Khác">⚙️ Nhiệm Vụ Khác</option>
+              </select>
+            </div>
+
+            {/* Tên Mục tiêu / Nhiệm vụ */}
+            <div>
+              <label className="block text-xs font-black text-slate-800 uppercase tracking-wide mb-1.5">Mục Tiêu / Nhiệm Vụ Chi Tiết (*)</label>
+              <input 
+                className="w-full border border-slate-200 p-3 rounded-xl text-sm font-semibold text-slate-900 focus:ring-2 focus:ring-sky-500" 
+                placeholder="Nhập tên nhiệm vụ hoặc cột mốc chiến lược..." 
+                value={form.task} 
+                onChange={e => setForm({ ...form, task: e.target.value })} 
+                required
+              />
+            </div>
+
+            {/* Target Reach & Deadline */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-black text-slate-800 uppercase tracking-wide mb-1.5">Target Reach (Mục tiêu)</label>
+                <input 
+                  type="number" 
+                  className="w-full border border-slate-200 p-3 rounded-xl text-sm font-bold text-slate-900" 
+                  placeholder="Lượt tiếp cận..." 
+                  value={form.targetReach} 
+                  onChange={e => setForm({ ...form, targetReach: e.target.value })} 
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-black text-slate-800 uppercase tracking-wide mb-1.5">Hạn Chót (Deadline)</label>
+                <input 
+                  type="date" 
+                  className="w-full border border-slate-200 p-3 rounded-xl text-sm font-bold text-slate-800 bg-white" 
+                  value={form.deadline} 
+                  onChange={e => setForm({ ...form, deadline: e.target.value })} 
+                />
+              </div>
+            </div>
+
+            {/* Progress % & Status Select */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <div className="flex justify-between items-center mb-1.5">
+                  <label className="block text-xs font-black text-slate-800 uppercase tracking-wide">Tiến Độ (%)</label>
+                  <span className="text-xs font-black text-sky-600">{form.progress}%</span>
+                </div>
+                <input 
+                  type="number" 
+                  min="0" 
+                  max="100" 
+                  className="w-full border border-slate-200 p-3 rounded-xl text-sm font-black text-slate-900 text-center" 
+                  value={form.progress} 
+                  onChange={e => setForm({ ...form, progress: e.target.value })} 
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-black text-slate-800 uppercase tracking-wide mb-1.5">Trạng Thái</label>
+                <select 
+                  className="w-full border border-slate-200 p-3 rounded-xl text-sm font-black text-slate-900 bg-white"
+                  value={form.status}
+                  onChange={e => {
+                    const st = e.target.value;
+                    setForm({ ...form, status: st, progress: st === 'Done' ? '100' : form.progress });
+                  }}
+                >
+                  <option value="Planning">⏳ Planning (Đang KH)</option>
+                  <option value="In Progress">🔄 In Progress (Đang làm)</option>
+                  <option value="Done">✅ Done (Hoàn thành)</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Ghi chú chi tiết */}
+            <div>
+              <label className="block text-xs font-black text-slate-800 uppercase tracking-wide mb-1.5">Ghi Chú Chi Tiết</label>
+              <textarea 
+                className="w-full border border-slate-200 p-3 rounded-xl text-sm font-medium text-slate-900 h-24 focus:ring-2 focus:ring-sky-500" 
+                placeholder="Nhập ghi chú chi tiết, lưu ý hoặc đề xuất..." 
+                value={form.note} 
+                onChange={e => setForm({ ...form, note: e.target.value })}
+              ></textarea>
+            </div>
+
+            <button 
+              type="submit" 
+              className="w-full py-3.5 bg-sky-600 hover:bg-sky-700 text-white font-black rounded-xl text-sm shadow-md transition"
+            >
+              {editingId ? 'Cập Nhật Mục Tiêu' : 'Lưu Mục Tiêu Mới'}
+            </button>
+          </form>
+
+          {/* DANH SÁCH BẢNG KẾ HOẠCH BÊN PHẢI (7 COLS) */}
+          <div className="lg:col-span-7 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+            <div className="flex justify-between items-center pb-3 border-b border-slate-100">
+              <h2 className="font-black text-base text-slate-900">Danh Sách Mục Tiêu Tháng ({rows.length})</h2>
+              <span className="text-xs text-slate-400 font-bold">Bấm nút Sửa để tải lên Form</span>
+            </div>
+
+            <div className="max-h-[520px] overflow-y-auto pr-1">
+              <table className="w-full text-left text-sm">
+                <thead className="sticky top-0 bg-white shadow-sm z-10">
+                  <tr className="border-b border-slate-200 text-slate-500 font-black uppercase text-xs">
+                    <th className="py-2.5 px-1">Hạng mục</th>
+                    <th className="px-1">Nhiệm vụ</th>
+                    <th className="px-1">Target</th>
+                    <th className="px-1 text-center">Tiến độ</th>
+                    <th className="px-1">Trạng thái</th>
+                    <th className="text-right px-1">Hành động</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {rows.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="py-12 text-center text-slate-400 font-semibold text-sm">
+                        Chưa có mục tiêu nào trong kế hoạch tháng này.
+                      </td>
+                    </tr>
+                  ) : rows.map(r => (
+                    <tr key={r.id} className="hover:bg-slate-50/80 transition">
+                      <td className="py-3 px-1">
+                        <span className="px-2 py-0.5 rounded text-[11px] font-extrabold bg-slate-100 text-slate-700">
+                          {r.category}
+                        </span>
+                      </td>
+                      <td className="py-3 px-1 font-bold text-slate-900 text-xs">
+                        {r.task || '--'}
+                        {r.note && <p className="text-[11px] text-slate-400 font-medium truncate max-w-[160px]">{r.note}</p>}
+                      </td>
+                      <td className="py-3 px-1 font-extrabold text-indigo-600 text-xs">{parseInt(r.targetReach || '0').toLocaleString()}</td>
+                      <td className="py-3 px-1 text-center font-black text-sky-600 text-xs">{r.progress}%</td>
+                      <td className="py-3 px-1">
+                        <span className={`px-2 py-0.5 rounded text-[11px] font-black ${
+                          r.status === 'Done' ? 'bg-emerald-100 text-emerald-800' :
+                          r.status === 'In Progress' ? 'bg-sky-100 text-sky-800' :
+                          'bg-amber-100 text-amber-800'
+                        }`}>
+                          {r.status}
+                        </span>
+                      </td>
+                      <td className="py-3 px-1 text-right">
+                        <div className="flex justify-end gap-1">
+                          <button onClick={() => startEdit(r)} className="bg-amber-50 hover:bg-amber-100 text-amber-700 px-2 py-1 rounded font-extrabold text-xs">Sửa</button>
+                          <button onClick={() => deleteRow(r.id)} className="bg-rose-50 hover:bg-rose-100 text-rose-700 px-2 py-1 rounded font-extrabold text-xs">Xóa</button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+      )}
+
+      {/* VIEW MODE 2: EXCEL GRID VIEW */}
       {activeView === 'GRID' && (
         <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
           <div className="flex justify-between items-center pb-3 border-b border-slate-100">
-            <h2 className="font-black text-base text-slate-900">Bảng Nhập Liệu Mục Tiêu & Tiến Độ Kế Hoạch</h2>
-            <span className="text-xs text-sky-600 font-extrabold">💡 Nhập trực tiếp vào các ô bên dưới</span>
+            <h2 className="font-black text-base text-slate-900">Bảng Nhập Liệu Trực Tiếp (Excel Grid)</h2>
+            <span className="text-xs text-sky-600 font-extrabold">💡 Chỉnh sửa ô trực tiếp trong bảng</span>
           </div>
 
           <div className="overflow-x-auto">
@@ -259,12 +482,11 @@ export default function Plan() {
                   <tr key={r.id} className="hover:bg-slate-50/80 transition">
                     <td className="py-2.5 px-1 font-bold text-center text-slate-400 text-xs">{i + 1}</td>
                     
-                    {/* Category */}
                     <td className="py-2.5 px-2">
                       <select 
                         className="w-full border border-slate-200 p-2 rounded-xl text-xs font-bold text-slate-800 bg-white"
                         value={r.category}
-                        onChange={e => updateRow(r.id, 'category', e.target.value)}
+                        onChange={e => updateRowInline(r.id, 'category', e.target.value)}
                       >
                         <option value="Nội Dung">📹 Nội Dung</option>
                         <option value="Kênh & Nhóm">📘 Kênh & Nhóm</option>
@@ -274,28 +496,25 @@ export default function Plan() {
                       </select>
                     </td>
 
-                    {/* Task */}
                     <td className="py-2.5 px-2">
                       <input 
                         className="w-full border border-slate-200 p-2 rounded-xl text-xs font-bold text-slate-900 focus:ring-2 focus:ring-sky-500" 
                         value={r.task} 
-                        onChange={e => updateRow(r.id, 'task', e.target.value)} 
+                        onChange={e => updateRowInline(r.id, 'task', e.target.value)} 
                         placeholder="Nhập nhiệm vụ..." 
                       />
                     </td>
 
-                    {/* Target Reach */}
                     <td className="py-2.5 px-2">
                       <input 
                         type="number"
                         className="w-full border border-slate-200 p-2 rounded-xl text-xs font-bold text-slate-900 focus:ring-2 focus:ring-sky-500" 
                         value={r.targetReach} 
-                        onChange={e => updateRow(r.id, 'targetReach', e.target.value)} 
+                        onChange={e => updateRowInline(r.id, 'targetReach', e.target.value)} 
                         placeholder="0" 
                       />
                     </td>
 
-                    {/* Progress */}
                     <td className="py-2.5 px-2 text-center">
                       <input 
                         type="number"
@@ -303,11 +522,10 @@ export default function Plan() {
                         max="100"
                         className="w-full border border-slate-200 p-2 rounded-xl text-xs font-black text-slate-900 text-center focus:ring-2 focus:ring-sky-500" 
                         value={r.progress} 
-                        onChange={e => updateRow(r.id, 'progress', e.target.value)} 
+                        onChange={e => updateRowInline(r.id, 'progress', e.target.value)} 
                       />
                     </td>
 
-                    {/* Status */}
                     <td className="py-2.5 px-2">
                       <select 
                         className={`w-full border p-2 rounded-xl text-xs font-black cursor-pointer ${
@@ -318,8 +536,8 @@ export default function Plan() {
                         value={r.status} 
                         onChange={e => {
                           const newStatus = e.target.value;
-                          updateRow(r.id, 'status', newStatus);
-                          if (newStatus === 'Done') updateRow(r.id, 'progress', '100');
+                          updateRowInline(r.id, 'status', newStatus);
+                          if (newStatus === 'Done') updateRowInline(r.id, 'progress', '100');
                         }}
                       >
                         <option value="Planning">⏳ Planning</option>
@@ -328,27 +546,24 @@ export default function Plan() {
                       </select>
                     </td>
 
-                    {/* Deadline */}
                     <td className="py-2.5 px-2">
                       <input 
                         type="date"
                         className="w-full border border-slate-200 p-2 rounded-xl text-xs font-bold text-slate-800 bg-white" 
                         value={r.deadline} 
-                        onChange={e => updateRow(r.id, 'deadline', e.target.value)} 
+                        onChange={e => updateRowInline(r.id, 'deadline', e.target.value)} 
                       />
                     </td>
 
-                    {/* Note */}
                     <td className="py-2.5 px-2">
                       <input 
                         className="w-full border border-slate-200 p-2 rounded-xl text-xs font-medium text-slate-700" 
                         value={r.note} 
-                        onChange={e => updateRow(r.id, 'note', e.target.value)} 
+                        onChange={e => updateRowInline(r.id, 'note', e.target.value)} 
                         placeholder="Ghi chú chi tiết..." 
                       />
                     </td>
 
-                    {/* Action Delete */}
                     <td className="py-2.5 px-2 text-right">
                       <button 
                         type="button"
@@ -363,27 +578,17 @@ export default function Plan() {
               </tbody>
             </table>
           </div>
-
-          <button 
-            type="button"
-            onClick={() => addRow()} 
-            className="w-full border-2 border-dashed border-sky-300 hover:border-sky-500 p-3 rounded-2xl text-sky-600 hover:bg-sky-50 font-black transition flex items-center justify-center gap-2 text-xs"
-          >
-            <span>➕</span> Thêm Nhiệm Vụ Mục Tiêu Mới
-          </button>
         </div>
       )}
 
-      {/* VIEW MODE 2: KANBAN BOARD VIEW */}
+      {/* VIEW MODE 3: KANBAN BOARD VIEW */}
       {activeView === 'KANBAN' && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Column 1: Planning */}
           <div className="bg-slate-100/90 p-4 rounded-2xl border border-slate-200 space-y-3">
             <div className="flex justify-between items-center pb-2 border-b border-slate-200">
               <h3 className="font-black text-xs text-amber-700 uppercase tracking-wide flex items-center gap-1.5">
                 <span>⏳</span> Planning ({planningTasks})
               </h3>
-              <button onClick={() => addRow('Planning')} className="text-xs bg-amber-200/60 hover:bg-amber-200 text-amber-900 px-2 py-0.5 rounded-md font-bold">+ Thêm</button>
             </div>
             
             <div className="space-y-3">
@@ -393,27 +598,26 @@ export default function Plan() {
                     <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-700">{r.category}</span>
                     <button onClick={() => deleteRow(r.id)} className="text-slate-400 hover:text-rose-600 text-xs font-bold">✕</button>
                   </div>
-                  <input className="font-extrabold text-sm text-slate-900 w-full bg-transparent focus:outline-none" value={r.task} onChange={e => updateRow(r.id, 'task', e.target.value)} placeholder="Tên mục tiêu..." />
+                  <div className="font-extrabold text-sm text-slate-900">{r.task}</div>
+                  {r.note && <p className="text-xs text-slate-500">{r.note}</p>}
                   <div className="text-xs text-slate-500 font-semibold flex justify-between">
-                    <span>Target: {parseInt(r.targetReach || '0').toLocaleString()} Reach</span>
+                    <span>Target: {parseInt(r.targetReach || '0').toLocaleString()}</span>
                     <span>{r.deadline ? `📅 ${r.deadline}` : ''}</span>
                   </div>
                   <div className="flex justify-between items-center pt-2 border-t border-slate-100 text-xs font-bold">
-                    <span className="text-slate-500">Tiến độ: {r.progress}%</span>
-                    <button onClick={() => updateRow(r.id, 'status', 'In Progress')} className="text-sky-600 hover:underline">Chuyển sang In Progress →</button>
+                    <span className="text-slate-500">{r.progress}%</span>
+                    <button onClick={() => updateRowInline(r.id, 'status', 'In Progress')} className="text-sky-600 hover:underline">Chuyển sang In Progress →</button>
                   </div>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Column 2: In Progress */}
           <div className="bg-sky-50/70 p-4 rounded-2xl border border-sky-100 space-y-3">
             <div className="flex justify-between items-center pb-2 border-b border-sky-200">
               <h3 className="font-black text-xs text-sky-800 uppercase tracking-wide flex items-center gap-1.5">
                 <span>🔄</span> In Progress ({inProgressTasks})
               </h3>
-              <button onClick={() => addRow('In Progress')} className="text-xs bg-sky-200/60 hover:bg-sky-200 text-sky-900 px-2 py-0.5 rounded-md font-bold">+ Thêm</button>
             </div>
             
             <div className="space-y-3">
@@ -423,27 +627,26 @@ export default function Plan() {
                     <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-sky-100 text-sky-800">{r.category}</span>
                     <button onClick={() => deleteRow(r.id)} className="text-slate-400 hover:text-rose-600 text-xs font-bold">✕</button>
                   </div>
-                  <input className="font-extrabold text-sm text-slate-900 w-full bg-transparent focus:outline-none" value={r.task} onChange={e => updateRow(r.id, 'task', e.target.value)} placeholder="Tên mục tiêu..." />
+                  <div className="font-extrabold text-sm text-slate-900">{r.task}</div>
+                  {r.note && <p className="text-xs text-slate-500">{r.note}</p>}
                   <div className="text-xs text-slate-500 font-semibold flex justify-between">
-                    <span>Target: {parseInt(r.targetReach || '0').toLocaleString()} Reach</span>
+                    <span>Target: {parseInt(r.targetReach || '0').toLocaleString()}</span>
                     <span>{r.deadline ? `📅 ${r.deadline}` : ''}</span>
                   </div>
                   <div className="flex justify-between items-center pt-2 border-t border-slate-100 text-xs font-bold">
-                    <span className="text-sky-700">Tiến độ: {r.progress}%</span>
-                    <button onClick={() => { updateRow(r.id, 'status', 'Done'); updateRow(r.id, 'progress', '100'); }} className="text-emerald-600 hover:underline">Hoàn thành ✓</button>
+                    <span className="text-sky-700">{r.progress}%</span>
+                    <button onClick={() => { updateRowInline(r.id, 'status', 'Done'); updateRowInline(r.id, 'progress', '100'); }} className="text-emerald-600 hover:underline">Hoàn thành ✓</button>
                   </div>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Column 3: Done */}
           <div className="bg-emerald-50/70 p-4 rounded-2xl border border-emerald-100 space-y-3">
             <div className="flex justify-between items-center pb-2 border-b border-emerald-200">
               <h3 className="font-black text-xs text-emerald-800 uppercase tracking-wide flex items-center gap-1.5">
                 <span>✅</span> Done ({completedTasks})
               </h3>
-              <button onClick={() => addRow('Done')} className="text-xs bg-emerald-200/60 hover:bg-emerald-200 text-emerald-900 px-2 py-0.5 rounded-md font-bold">+ Thêm</button>
             </div>
             
             <div className="space-y-3">
@@ -453,9 +656,10 @@ export default function Plan() {
                     <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">{r.category}</span>
                     <button onClick={() => deleteRow(r.id)} className="text-slate-400 hover:text-rose-600 text-xs font-bold">✕</button>
                   </div>
-                  <input className="font-extrabold text-sm text-slate-900 line-through w-full bg-transparent focus:outline-none" value={r.task} onChange={e => updateRow(r.id, 'task', e.target.value)} placeholder="Tên mục tiêu..." />
+                  <div className="font-extrabold text-sm text-slate-900 line-through">{r.task}</div>
+                  {r.note && <p className="text-xs text-slate-500">{r.note}</p>}
                   <div className="text-xs text-slate-500 font-semibold flex justify-between">
-                    <span>Reach: {parseInt(r.targetReach || '0').toLocaleString()}</span>
+                    <span>Target: {parseInt(r.targetReach || '0').toLocaleString()}</span>
                     <span>{r.deadline ? `📅 ${r.deadline}` : ''}</span>
                   </div>
                   <div className="flex justify-between items-center pt-2 border-t border-slate-100 text-xs font-bold">
