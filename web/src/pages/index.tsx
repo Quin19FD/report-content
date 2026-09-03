@@ -561,29 +561,30 @@ export default function Home() {
                            </td>
                          </tr>
                        ) : filteredEntries.map(e => (
-                         <tr key={e.id} className="border-b border-slate-100 hover:bg-slate-50/80 transition">
-                             <td className="py-3 px-1 font-bold">
-                               <span className={`px-2.5 py-1 rounded-md text-xs font-extrabold ${e.platform === 'YouTube' ? 'bg-red-100 text-red-700' : e.platform === 'Facebook' ? 'bg-sky-100 text-sky-700' : 'bg-slate-950 text-white'}`}>
-                                 {e.platform}
-                               </span>
-                             </td>
-                             <td className="py-3 px-1 font-bold text-slate-800 text-sm">{e.time || '--:--'}</td>
-                             <td className="py-3 px-1 font-semibold text-slate-700 truncate max-w-[120px] text-xs">{e.group || '--'}</td>
-                             <td className="py-3 px-1">
-                               <a href={e.link.startsWith('http') ? e.link : `https://${e.link}`} target="_blank" rel="noopener noreferrer" className="text-sky-600 font-extrabold hover:underline bg-sky-50 px-2.5 py-1 rounded-lg text-xs">
-                                 Mở ↗
-                               </a>
-                             </td>
-                             <td className="py-3 px-1 font-black text-slate-900 text-sm">{e.reach ? parseInt(e.reach).toLocaleString() : '0'}</td>
-                             <td className="py-3 px-1">{e.isShared ? <span className="text-emerald-700 font-extrabold text-sm">✓</span> : <span className="text-slate-300 font-bold text-sm">✕</span>}</td>
-                             <td className="py-3 px-1 hidden md:table-cell max-w-[160px] truncate text-slate-600 font-medium text-xs">{e.hook || '--'}</td>
-                             <td className="py-3 px-1 text-right">
-                               <div className="flex justify-end gap-1.5">
-                                 <button onClick={() => startEdit(e)} className="bg-amber-50 hover:bg-amber-100 text-amber-700 px-2.5 py-1 rounded-lg font-extrabold text-xs">Sửa</button>
-                                 <button onClick={() => handleDelete(e.id)} className="bg-rose-50 hover:bg-rose-100 text-rose-700 px-2.5 py-1 rounded-lg font-extrabold text-xs">Xóa</button>
-                               </div>
-                             </td>
-                       ))}
+                        <tr key={e.id} className="border-b border-slate-100 hover:bg-slate-50/80 transition">
+                            <td className="py-3 px-1 font-bold">
+                              <span className={`px-2.5 py-1 rounded-md text-xs font-extrabold ${e.platform === 'YouTube' ? 'bg-red-100 text-red-700' : e.platform === 'Facebook' ? 'bg-sky-100 text-sky-700' : 'bg-slate-950 text-white'}`}>
+                                {e.platform}
+                              </span>
+                            </td>
+                            <td className="py-3 px-1 font-bold text-slate-800 text-sm">{e.time || '--:--'}</td>
+                            <td className="py-3 px-1 font-semibold text-slate-700 truncate max-w-[120px] text-xs">{e.group || '--'}</td>
+                            <td className="py-3 px-1">
+                              <a href={e.link.startsWith('http') ? e.link : `https://${e.link}`} target="_blank" rel="noopener noreferrer" className="text-sky-600 font-extrabold hover:underline bg-sky-50 px-2.5 py-1 rounded-lg text-xs">
+                                Mở ↗
+                              </a>
+                            </td>
+                            <td className="py-3 px-1 font-black text-slate-900 text-sm">{e.reach ? parseInt(e.reach).toLocaleString() : '0'}</td>
+                            <td className="py-3 px-1">{e.isShared ? <span className="text-emerald-700 font-extrabold text-sm">✓</span> : <span className="text-slate-300 font-bold text-sm">✕</span>}</td>
+                            <td className="py-3 px-1 hidden md:table-cell max-w-[160px] truncate text-slate-600 font-medium text-xs">{e.hook || '--'}</td>
+                            <td className="py-3 px-1 text-right">
+                              <div className="flex justify-end gap-1.5">
+                                <button onClick={() => startEdit(e)} className="bg-amber-50 hover:bg-amber-100 text-amber-700 px-2.5 py-1 rounded-lg font-extrabold text-xs">Sửa</button>
+                                <button onClick={() => handleDelete(e.id)} className="bg-rose-50 hover:bg-rose-100 text-rose-700 px-2.5 py-1 rounded-lg font-extrabold text-xs">Xóa</button>
+                              </div>
+                            </td>
+                        </tr>
+                      ))}
                      </tbody>
                  </table>
                </div>
