@@ -190,12 +190,13 @@ export default function Home() {
     showToast('✏️ Đã tải dữ liệu lên form để sửa!');
   };
 
-  // Modern PDF Export Engine
+  // Executive PDF Export Engine (Siêu Nâng Cấp)
   const generatePDF = async () => {
     setIsExportingPDF(true);
     try {
       const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
       
+      // Nạp Font Roboto Unicode Tiếng Việt
       try {
         const fontUrl = 'https://fonts.gstatic.com/s/roboto/v30/KFOmCnqEu92Fr1Me5WZLCzYlKw.ttf';
         const res = await fetch(fontUrl);
@@ -205,24 +206,87 @@ export default function Home() {
         doc.addFont("Roboto-Regular.ttf", "Roboto", "normal");
         doc.setFont("Roboto");
       } catch (err) {
-        console.warn("Fallback font", err);
+        console.warn("Fallback to default font", err);
       }
 
-      const today = new Date().toLocaleDateString('vi-VN');
+      const todayStr = new Date().toLocaleDateString('vi-VN');
+      const timeStr = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+      
       const totalReachSum = entries.reduce((acc, curr) => acc + (parseInt(curr.reach) || 0), 0);
+      const fbCount = entries.filter(e => e.platform === 'Facebook').length;
+      const ytCount = entries.filter(e => e.platform === 'YouTube').length;
+      const ttCount = entries.filter(e => e.platform === 'TikTok').length;
+      const sharedCount = entries.filter(e => e.isShared).length;
+      const shareRate = entries.length > 0 ? Math.round((sharedCount / entries.length) * 100) : 0;
 
-      // Header Banner
+      // 1. TOP HEADER BANNER SANG TRỌNG (Dark Slate #0f172a)
       doc.setFillColor(15, 23, 42);
-      doc.rect(0, 0, 297, 30, 'F');
+      doc.rect(0, 0, 297, 34, 'F');
       
+      // Logo Box Accent (Sky-Blue)
+      doc.setFillColor(14, 165, 233);
+      doc.rect(14, 8, 12, 12, 'F');
       doc.setTextColor(255, 255, 255);
-      doc.setFontSize(16);
-      doc.text("BÁO CÁO CÔNG VIỆC HÀNG NGÀY (CONTENTFLOW CRM)", 14, 13);
-      
       doc.setFontSize(10);
-      doc.setTextColor(203, 213, 225);
-      doc.text(`Ngày lập: ${today}   |   Tổng số bài/video: ${entries.length}   |   Tổng Reach/Views: ${totalReachSum.toLocaleString()}`, 14, 22);
+      doc.text("CF", 17.5, 16);
 
+      // Title Text
+      doc.setFontSize(16);
+      doc.setTextColor(255, 255, 255);
+      doc.text("CONTENTFLOW CRM - BÁO CÁO CÔNG VIỆC HÀNG NGÀY", 31, 15);
+      
+      doc.setFontSize(9);
+      doc.setTextColor(148, 163, 184); // Slate 400
+      doc.text(`Tự động tổng hợp dữ liệu truyền thông đa nền tảng  |  Ngày lập: ${todayStr} (${timeStr})`, 31, 23);
+
+      // 2. EXECUTIVE SUMMARY STATS CARDS (Khối Thống Kê Nổi Bật)
+      doc.setFillColor(248, 250, 252); // Slate 50
+      doc.setDrawColor(226, 232, 240); // Slate 200
+      doc.roundedRect(14, 38, 269, 22, 3, 3, 'FD');
+
+      doc.setTextColor(51, 65, 85);
+      doc.setFontSize(9);
+      
+      // Card 1: Total Posts
+      doc.text("TỔNG NỘI DUNG", 20, 45);
+      doc.setFontSize(12);
+      doc.setTextColor(15, 23, 42);
+      doc.text(`${entries.length} Bài/Video`, 20, 53);
+      doc.setFontSize(8);
+      doc.setTextColor(100, 116, 139);
+      doc.text(`(FB: ${fbCount} | YT: ${ytCount} | TT: ${ttCount})`, 20, 57);
+
+      // Card 2: Total Reach
+      doc.setFontSize(9);
+      doc.setTextColor(51, 65, 85);
+      doc.text("TỔNG LƯỢT XEM / REACH", 90, 45);
+      doc.setFontSize(12);
+      doc.setTextColor(16, 185, 129); // Emerald 600
+      doc.text(`${totalReachSum.toLocaleString()} lượt`, 90, 53);
+      doc.setFontSize(8);
+      doc.setTextColor(100, 116, 139);
+      doc.text("Cộng dồn tất cả bài viết", 90, 57);
+
+      // Card 3: Share Rate
+      doc.setFontSize(9);
+      doc.setTextColor(51, 65, 85);
+      doc.text("TỶ LỆ CHIA SẺ (SHARE)", 175, 45);
+      doc.setFontSize(12);
+      doc.setTextColor(2, 132, 199); // Sky 600
+      doc.text(`${shareRate}% (${sharedCount}/${entries.length} bài)`, 175, 53);
+      doc.setFontSize(8);
+      doc.setTextColor(100, 116, 139);
+      doc.text("Trạng thái đã phân phối", 175, 57);
+
+      // Card 4: Evaluation Status
+      doc.setFontSize(9);
+      doc.setTextColor(51, 65, 85);
+      doc.text("ĐÁNH GIÁ CHUNG", 240, 45);
+      doc.setFontSize(11);
+      doc.setTextColor(217, 119, 6); // Amber 600
+      doc.text(totalReachSum > 10000 ? "🔥 Rất Tốt" : "✅ Hoạt Động", 240, 53);
+
+      // 3. TABLE DATA FORMATTING
       const tableData = entries.map((e, index) => [
         (index + 1).toString(),
         e.platform || 'N/A',
@@ -230,47 +294,57 @@ export default function Home() {
         e.group || '--',
         e.link || '',
         e.reach ? parseInt(e.reach).toLocaleString() : '0',
-        e.isShared ? 'Có' : 'Chưa',
-        e.hook || '',
-        e.suggestion || ''
+        e.isShared ? '✓ Có' : '✕ Chưa',
+        e.hook || '--',
+        e.suggestion || '--'
       ]);
 
       autoTable(doc, {
-        head: [["STT", "Nền tảng", "Giờ", "Nhóm / Loại", "Link bài viết / video", "Reach/Views", "Shared", "Câu Hook", "Đề xuất sửa"]],
+        head: [["STT", "Nền tảng", "Giờ", "Nhóm / Kênh / Loại", "Link bài viết / video", "Reach / Views", "Shared", "Câu Hook / Tiêu đề", "Đề xuất tối ưu"]],
         body: tableData,
-        startY: 36,
+        startY: 65,
         theme: 'grid',
         styles: {
           font: 'Roboto',
-          fontSize: 9,
-          cellPadding: 3,
+          fontSize: 8.5,
+          cellPadding: 3.5,
           valign: 'middle',
-          overflow: 'linebreak'
+          overflow: 'linebreak',
+          lineColor: [226, 232, 240],
+          lineWidth: 0.2
         },
         headStyles: {
-          fillColor: [30, 41, 59],
+          fillColor: [30, 41, 59], // Slate 800
           textColor: [255, 255, 255],
           fontStyle: 'normal',
-          halign: 'center'
+          halign: 'center',
+          fontSize: 9
         },
         columnStyles: {
           0: { cellWidth: 10, halign: 'center' },
-          1: { cellWidth: 24, fontStyle: 'normal' },
+          1: { cellWidth: 24, halign: 'center' },
           2: { cellWidth: 16, halign: 'center' },
           3: { cellWidth: 32 },
-          4: { cellWidth: 55, textColor: [2, 132, 199] },
-          5: { cellWidth: 24, halign: 'right' },
-          6: { cellWidth: 16, halign: 'center' },
-          7: { cellWidth: 50 },
-          8: { cellWidth: 40 }
+          4: { cellWidth: 52, textColor: [2, 132, 199] },
+          5: { cellWidth: 26, halign: 'right' },
+          6: { cellWidth: 18, halign: 'center' },
+          7: { cellWidth: 48 },
+          8: { cellWidth: 43 }
         },
         alternateRowStyles: {
           fillColor: [248, 250, 252]
+        },
+        didDrawPage: (data) => {
+          // Footer trên mỗi trang PDF
+          const pageCount = doc.internal.pages.length - 1;
+          doc.setFontSize(8);
+          doc.setTextColor(148, 163, 184);
+          doc.text(`ContentFlow CRM • Hệ thống báo cáo công việc tự động  |  Trang ${data.pageNumber} / ${pageCount}`, 14, 202);
         }
       });
 
-      doc.save(`Bao_Cao_Cong_Viec_${today.replace(/\//g, '-')}.pdf`);
-      showToast('📄 Đã xuất file PDF báo cáo!');
+      doc.save(`Bao_Cao_ContentFlow_${todayStr.replace(/\//g, '-')}.pdf`);
+      showToast('📄 Đã nâng cấp & xuất file PDF chuyên nghiệp!');
     } catch (error) {
       alert("Lỗi xuất PDF: " + error);
     } finally {
