@@ -112,13 +112,44 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
           botSent = true;
 
           try {
-            let payload: any = { text: `📢 [ContentFlow CRM] BÁO CÁO NGÀY ${newEntry.date} (Lượt ${state.count}/2)\n• Nền tảng: ${newEntry.platform}\n• Giờ: ${newEntry.time}\n• Reach/Views: ${newEntry.reach || 0}\n• Link: ${newEntry.link}\n• Hook: ${newEntry.hook || 'Không có'}` };
+            // Tổng hợp TOÀN BỘ báo cáo của ngày vừa submit (không chỉ 1 bài)
+            const dayFile = path.join(DATA_DIR, `reports-${entryDate}.json`);
+            let dayEntries: any[] = [];
+            try {
+              dayEntries = JSON.parse(fs.readFileSync(dayFile, 'utf-8'));
+            } catch (e) {}
+            dayEntries.sort((a, b) => (a.time || '').localeCompare(b.time || ''));
 
+            const totalReach = dayEntries.reduce((acc, e) => acc + (parseInt(e.reach) || 0), 0);
+            const fb = dayEntries.filter(e => e.platform === 'Facebook');
+            const yt = dayEntries.filter(e => e.platform === 'YouTube');
+            const tt = dayEntries.filter(e => e.platform === 'TikTok');
+
+            const lines: string[] = [
+              `📢 [ContentFlow CRM] BÁO CÁO TỔNG HỢP NGÀY ${entryDate} (Lượt ${state.count}/2)`,
+              `━━━━━━━━━━━━━━━━━━`,
+              `📊 Tổng: ${dayEntries.length} bài | FB: ${fb.length} | YT: ${yt.length} | TT: ${tt.length}`,
+              `📈 Tổng Reach/Views: ${totalReach.toLocaleString('vi-VN')}`
+            ];
+
+            if (fb.length) {
+              lines.push(`━━━ 📘 Facebook ━━━`);
+              fb.forEach(e => lines.push(`• ${e.time || '--:--'} | Reach ${(parseInt(e.reach) || 0).toLocaleString('vi-VN')} | ${e.group || '--'} | ${e.hook || e.link}`));
+            }
+            if (yt.length) {
+              lines.push(`━━━ 🎬 YouTube ━━━`);
+              yt.forEach(e => lines.push(`• ${e.time || '--:--'} | Views ${(parseInt(e.reach) || 0).toLocaleString('vi-VN')} | ${e.group || '--'} | ${e.hook || e.link}`));
+            }
+            if (tt.length) {
+              lines.push(`━━━ 🎵 TikTok ━━━`);
+              tt.forEach(e => lines.push(`• ${e.time || '--:--'} | Views ${(parseInt(e.reach) || 0).toLocaleString('vi-VN')} | ${e.group || '--'} | ${e.hook || e.link}`));
+            }
+
+            const msgText = lines.join('\n');
+
+            let payload: any = { text: msgText };
             if (webhookUrl.includes('larksuite.com') || webhookUrl.includes('feishu.cn')) {
-              payload = {
-                msg_type: 'text',
-                content: { text: `📢 [ContentFlow CRM] BÁO CÁO NGÀY ${newEntry.date} (Lượt ${state.count}/2)\n• Nền tảng: ${newEntry.platform}\n• Reach/Views: ${newEntry.reach || 0}\n• Link: ${newEntry.link}` }
-              };
+              payload = { msg_type: 'text', content: { text: msgText } };
             }
 
             fetch(webhookUrl, {
