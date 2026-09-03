@@ -6,6 +6,14 @@ import autoTable from "jspdf-autotable";
 export default function Home() {
   const [activeTab, setActiveTab] = useState('Facebook');
   const [rightTab, setRightTab] = useState<'REPORTS' | 'MANAGEMENT'>('REPORTS');
+  
+  // Date Filtering State
+  const [filterType, setFilterType] = useState<'TODAY' | 'MONTH' | 'YEAR' | 'ALL' | 'CUSTOM'>('TODAY');
+  const todayStr = new Date().toISOString().split('T')[0];
+  const [selectedDate, setSelectedDate] = useState(todayStr);
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+
   const [entries, setEntries] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterPlatform, setFilterPlatform] = useState('ALL');
@@ -24,6 +32,7 @@ export default function Home() {
   const [ttChannels, setTtChannels] = useState<{name: string, link: string}[]>([]);
   const [ttChannelName, setTtChannelName] = useState('');
   const [ttChannelLink, setTtChannelLink] = useState('');
+
   // Helper to get current HH:mm
   const getCurrentTime = () => {
     const now = new Date();
@@ -31,6 +40,7 @@ export default function Home() {
   };
 
   const [form, setForm] = useState({ 
+    date: todayStr,
     link: '', 
     time: getCurrentTime(), 
     reach: '', 
@@ -56,7 +66,12 @@ export default function Home() {
 
   const fetchData = async () => {
     try {
-      const resEntries = await fetch('/api/reports');
+      let query = `?filterType=${filterType}`;
+      if (filterType === 'TODAY') query += `&date=${selectedDate}`;
+      if (filterType === 'MONTH') query += `&month=${selectedMonth}&year=${selectedYear}`;
+      if (filterType === 'YEAR') query += `&year=${selectedYear}`;
+
+      const resEntries = await fetch(`/api/reports${query}`);
       setEntries(await resEntries.json());
       
       const resGroups = await fetch('/api/groups');
@@ -74,7 +89,7 @@ export default function Home() {
 
   useEffect(() => { 
     fetchData();
-  }, []);
+  }, [filterType, selectedDate, selectedMonth, selectedYear]);
 
   // AUTOMATION 1: Smart URL Detection & Auto Platform/Type Switch
   const handleLinkChange = (url: string) => {
@@ -89,35 +104,26 @@ export default function Home() {
         setActiveTab('YouTube');
         showToast('⚡ Tự động chuyển sang tab YouTube!');
       }
-
       if (lowerUrl.includes('/shorts/')) {
-        setForm(prev => ({ ...prev, link: url, videoType: 'Shorts' }));
-      } else if (lowerUrl.includes('watch?v=') || lowerUrl.includes('youtu.be/')) {
-        setForm(prev => ({ ...prev, link: url, videoType: 'Video Dài' }));
-      } else if (lowerUrl.includes('/live/')) {
-        setForm(prev => ({ ...prev, link: url, videoType: 'Livestream' }));
-      }
-    } 
-    // Auto-detect Facebook
-    else if (lowerUrl.includes('facebook.com') || lowerUrl.includes('fb.watch') || lowerUrl.includes('fb.com')) {
-      if (activeTab !== 'Facebook') {
-        setActiveTab('Facebook');
-        showToast('📘 Tự động chuyển sang tab Facebook!');
+        setForm(prev => ({ ...prev, videoType: 'Shorts' }));
+      } else if (lowerUrl.includes('/watch') || lowerUrl.includes('youtu.be/')) {
+        setForm(prev => ({ ...prev, videoType: 'Video Dài' }));
       }
     } 
     // Auto-detect TikTok
     else if (lowerUrl.includes('tiktok.com')) {
       if (activeTab !== 'TikTok') {
         setActiveTab('TikTok');
-        showToast('🎵 Tự động chuyển sang tab TikTok!');
+        showToast('⚡ Tự động chuyển sang tab TikTok!');
+      }
+    } 
+    // Auto-detect Facebook
+    else if (lowerUrl.includes('facebook.com') || lowerUrl.includes('fb.watch')) {
+      if (activeTab !== 'Facebook') {
+        setActiveTab('Facebook');
+        showToast('⚡ Tự động chuyển sang tab Facebook!');
       }
     }
-  };
-
-  // AUTOMATION 2: Quick Reach Presets
-  const addReachPreset = (amount: number) => {
-    const current = parseInt(form.reach) || 0;
-    setForm(prev => ({ ...prev, reach: (current + amount).toString() }));
   };
 
   const addGroup = async () => {
@@ -143,18 +149,20 @@ export default function Home() {
     setTtChannelName(''); setTtChannelLink(''); fetchData();
     showToast('✅ Đã lưu kênh TikTok mới!');
   };
+
   const handleSubmit = async () => {
     if (!form.link) return alert("Vui lòng dán Link bài/video!");
     
     const submissionTime = form.time.trim() || getCurrentTime();
     const method = editingId ? 'PUT' : 'POST';
-    const groupValue = activeTab === 'Facebook' ? form.group : (activeTab === 'YouTube' ? `${form.videoType}${form.group ? ' - ' + form.group : ''}` : '');
+    const groupValue = activeTab === 'Facebook' ? form.group : (activeTab === 'YouTube' ? `${form.videoType}${form.group ? ' - ' + form.group : ''}` : form.group);
 
     await fetch('/api/reports', {
       method,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
         ...form, 
+        date: form.date || todayStr,
         time: submissionTime,
         id: editingId, 
         platform: activeTab, 
@@ -165,6 +173,7 @@ export default function Home() {
     });
 
     setForm({ 
+      date: todayStr,
       link: '', 
       time: getCurrentTime(),
       reach: '', 
@@ -189,8 +198,8 @@ export default function Home() {
   };
 
   const startEdit = (entry: any) => {
-    setEditingId(entry.id);
     setForm({ 
+      date: entry.date || todayStr,
       link: entry.link || '', 
       time: entry.time || getCurrentTime(), 
       reach: entry.reach || '', 
@@ -201,16 +210,16 @@ export default function Home() {
     });
     setIsShared(entry.isShared || false);
     setActiveTab(entry.platform || 'Facebook');
+    setEditingId(entry.id);
     showToast('✏️ Đã tải dữ liệu lên form để sửa!');
   };
 
-  // Executive PDF Export Engine (Siêu Nâng Cấp)
+  // Executive PDF Export Engine (Hỗ trợ Nhiều Ngày/Tháng/Năm)
   const generatePDF = async () => {
     setIsExportingPDF(true);
     try {
       const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
       
-      // Nạp Font Roboto Unicode Tiếng Việt
       try {
         const fontUrl = 'https://fonts.gstatic.com/s/roboto/v30/KFOmCnqEu92Fr1Me5WZLCzYlKw.ttf';
         const res = await fetch(fontUrl);
@@ -223,98 +232,91 @@ export default function Home() {
         console.warn("Fallback to default font", err);
       }
 
-      const todayStr = new Date().toLocaleDateString('vi-VN');
-      const timeStr = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
-      
-      const totalReachSum = entries.reduce((acc, curr) => acc + (parseInt(curr.reach) || 0), 0);
-      const fbCount = entries.filter(e => e.platform === 'Facebook').length;
-      const ytCount = entries.filter(e => e.platform === 'YouTube').length;
-      const ttCount = entries.filter(e => e.platform === 'TikTok').length;
-      const sharedCount = entries.filter(e => e.isShared).length;
-      const shareRate = entries.length > 0 ? Math.round((sharedCount / entries.length) * 100) : 0;
+      let timeLabel = `Hôm nay (${selectedDate})`;
+      if (filterType === 'MONTH') timeLabel = `Tháng ${selectedMonth}/${selectedYear}`;
+      if (filterType === 'YEAR') timeLabel = `Năm ${selectedYear}`;
+      if (filterType === 'ALL') timeLabel = `Tất Cả Thời Gian`;
 
-      // 1. TOP HEADER BANNER SANG TRỌNG (Dark Slate #0f172a)
+      const totalReachSum = filteredEntries.reduce((acc, curr) => acc + (parseInt(curr.reach) || 0), 0);
+      const fbCount = filteredEntries.filter(e => e.platform === 'Facebook').length;
+      const ytCount = filteredEntries.filter(e => e.platform === 'YouTube').length;
+      const ttCount = filteredEntries.filter(e => e.platform === 'TikTok').length;
+      const sharedCount = filteredEntries.filter(e => e.isShared).length;
+      const shareRate = filteredEntries.length > 0 ? Math.round((sharedCount / filteredEntries.length) * 100) : 0;
+
+      // 1. TOP HEADER BANNER
       doc.setFillColor(15, 23, 42);
       doc.rect(0, 0, 297, 34, 'F');
       
-      // Logo Box Accent (Sky-Blue)
       doc.setFillColor(14, 165, 233);
       doc.rect(14, 8, 12, 12, 'F');
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(10);
       doc.text("CF", 17.5, 16);
 
-      // Title Text
-      doc.setFontSize(16);
+      doc.setFontSize(15);
       doc.setTextColor(255, 255, 255);
-      doc.text("CONTENTFLOW CRM - BÁO CÁO CÔNG VIỆC HÀNG NGÀY", 31, 15);
+      doc.text(`CONTENTFLOW CRM - BÁO CÁO CÔNG VIỆC (${timeLabel.toUpperCase()})`, 31, 15);
       
       doc.setFontSize(9);
-      doc.setTextColor(148, 163, 184); // Slate 400
-      doc.text(`Tự động tổng hợp dữ liệu truyền thông đa nền tảng  |  Ngày lập: ${todayStr} (${timeStr})`, 31, 23);
+      doc.setTextColor(148, 163, 184);
+      doc.text(`Tự động tổng hợp dữ liệu  |  Xuất báo cáo ngày: ${new Date().toLocaleDateString('vi-VN')}`, 31, 23);
 
-      // 2. EXECUTIVE SUMMARY STATS CARDS (Khối Thống Kê Nổi Bật)
-      doc.setFillColor(248, 250, 252); // Slate 50
-      doc.setDrawColor(226, 232, 240); // Slate 200
+      // 2. SUMMARY CARDS
+      doc.setFillColor(248, 250, 252);
+      doc.setDrawColor(226, 232, 240);
       doc.roundedRect(14, 38, 269, 22, 3, 3, 'FD');
 
       doc.setTextColor(51, 65, 85);
       doc.setFontSize(9);
       
-      // Card 1: Total Posts
       doc.text("TỔNG NỘI DUNG", 20, 45);
       doc.setFontSize(12);
       doc.setTextColor(15, 23, 42);
-      doc.text(`${entries.length} Bài/Video`, 20, 53);
+      doc.text(`${filteredEntries.length} Bài/Video`, 20, 53);
       doc.setFontSize(8);
       doc.setTextColor(100, 116, 139);
       doc.text(`(FB: ${fbCount} | YT: ${ytCount} | TT: ${ttCount})`, 20, 57);
 
-      // Card 2: Total Reach
       doc.setFontSize(9);
       doc.setTextColor(51, 65, 85);
       doc.text("TỔNG LƯỢT XEM / REACH", 90, 45);
       doc.setFontSize(12);
-      doc.setTextColor(16, 185, 129); // Emerald 600
+      doc.setTextColor(16, 185, 129);
       doc.text(`${totalReachSum.toLocaleString()} lượt`, 90, 53);
       doc.setFontSize(8);
       doc.setTextColor(100, 116, 139);
-      doc.text("Cộng dồn tất cả bài viết", 90, 57);
+      doc.text("Cộng dồn tất cả báo cáo", 90, 57);
 
-      // Card 3: Share Rate
       doc.setFontSize(9);
       doc.setTextColor(51, 65, 85);
-      doc.text("TỶ LỆ CHIA SẺ (SHARE)", 175, 45);
+      doc.text("TỶ LỆ CHIA SẺ", 175, 45);
       doc.setFontSize(12);
-      doc.setTextColor(2, 132, 199); // Sky 600
-      doc.text(`${shareRate}% (${sharedCount}/${entries.length} bài)`, 175, 53);
-      doc.setFontSize(8);
-      doc.setTextColor(100, 116, 139);
-      doc.text("Trạng thái đã phân phối", 175, 57);
+      doc.setTextColor(2, 132, 199);
+      doc.text(`${shareRate}% (${sharedCount}/${filteredEntries.length})`, 175, 53);
 
-      // Card 4: Evaluation Status
       doc.setFontSize(9);
       doc.setTextColor(51, 65, 85);
       doc.text("ĐÁNH GIÁ CHUNG", 240, 45);
       doc.setFontSize(11);
-      doc.setTextColor(217, 119, 6); // Amber 600
+      doc.setTextColor(217, 119, 6);
       doc.text(totalReachSum > 10000 ? "🔥 Rất Tốt" : "✅ Hoạt Động", 240, 53);
 
-      // 3. TABLE DATA FORMATTING
-      const tableData = entries.map((e, index) => [
+      // 3. TABLE DATA
+      const tableData = filteredEntries.map((e, index) => [
         (index + 1).toString(),
+        e.date || '--',
         e.platform || 'N/A',
         e.time || '--:--',
         e.group || '--',
         e.link || '',
         e.reach ? parseInt(e.reach).toLocaleString() : '0',
         e.isShared ? '✓ Có' : '✕ Chưa',
-        e.hook || '--',
-        e.suggestion || '--'
+        e.hook || '--'
       ]);
 
       autoTable(doc, {
-        head: [["STT", "Nền tảng", "Giờ", "Nhóm / Kênh / Loại", "Link bài viết / video", "Reach / Views", "Shared", "Câu Hook / Tiêu đề", "Đề xuất tối ưu"]],
+        head: [["STT", "Ngày", "Nền tảng", "Giờ", "Nhóm / Kênh / Loại", "Link bài viết / video", "Reach / Views", "Shared", "Câu Hook / Tiêu đề"]],
         body: tableData,
         startY: 65,
         theme: 'grid',
@@ -328,7 +330,7 @@ export default function Home() {
           lineWidth: 0.2
         },
         headStyles: {
-          fillColor: [30, 41, 59], // Slate 800
+          fillColor: [30, 41, 59],
           textColor: [255, 255, 255],
           fontStyle: 'normal',
           halign: 'center',
@@ -336,29 +338,28 @@ export default function Home() {
         },
         columnStyles: {
           0: { cellWidth: 10, halign: 'center' },
-          1: { cellWidth: 24, halign: 'center' },
-          2: { cellWidth: 16, halign: 'center' },
-          3: { cellWidth: 32 },
-          4: { cellWidth: 52, textColor: [2, 132, 199] },
-          5: { cellWidth: 26, halign: 'right' },
-          6: { cellWidth: 18, halign: 'center' },
-          7: { cellWidth: 48 },
-          8: { cellWidth: 43 }
+          1: { cellWidth: 22, halign: 'center' },
+          2: { cellWidth: 22, halign: 'center' },
+          3: { cellWidth: 16, halign: 'center' },
+          4: { cellWidth: 32 },
+          5: { cellWidth: 60, textColor: [2, 132, 199] },
+          6: { cellWidth: 26, halign: 'right' },
+          7: { cellWidth: 16, halign: 'center' },
+          8: { cellWidth: 65 }
         },
         alternateRowStyles: {
           fillColor: [248, 250, 252]
         },
         didDrawPage: (data) => {
-          // Footer trên mỗi trang PDF
           const pageCount = doc.internal.pages.length - 1;
           doc.setFontSize(8);
           doc.setTextColor(148, 163, 184);
-          doc.text(`ContentFlow CRM • Hệ thống báo cáo công việc tự động  |  Trang ${data.pageNumber} / ${pageCount}`, 14, 202);
+          doc.text(`ContentFlow CRM • Hệ thống báo cáo đa ngày  |  Trang ${data.pageNumber} / ${pageCount}`, 14, 202);
         }
       });
 
-      doc.save(`Bao_Cao_ContentFlow_${todayStr.replace(/\//g, '-')}.pdf`);
-      showToast('📄 Đã nâng cấp & xuất file PDF chuyên nghiệp!');
+      doc.save(`Bao_Cao_${timeLabel.replace(/\s+/g, '_')}.pdf`);
+      showToast('📄 Đã xuất file PDF báo cáo đa ngày thành công!');
     } catch (error) {
       alert("Lỗi xuất PDF: " + error);
     } finally {
@@ -366,12 +367,11 @@ export default function Home() {
     }
   };
 
-  // Metrics
+  // Metrics calculation based on filtered entries
   const totalPosts = entries.length;
   const totalReachSum = entries.reduce((acc, curr) => acc + (parseInt(curr.reach) || 0), 0);
   const sharedCount = entries.filter(e => e.isShared).length;
 
-  // Filtered entries for table
   const filteredEntries = entries.filter(e => {
     const matchPlatform = filterPlatform === 'ALL' || e.platform === filterPlatform;
     const matchSearch = searchQuery === '' || 
@@ -391,14 +391,12 @@ export default function Home() {
         </div>
       )}
 
-      {/* TOP HEADER - LARGER TYPOGRAPHY */}
-      <div className="flex flex-wrap items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-200">
+      {/* TOP HEADER - MULTI-DATE FILTER CONTROLS */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-200">
         <div>
           <h1 className="text-3xl font-black text-slate-900 tracking-tight">Dashboard Báo Cáo Nội Dung</h1>
           <div className="flex items-center gap-3 text-sm text-slate-600 mt-1 font-bold">
-            <span>📅 {new Date().toLocaleDateString('vi-VN')}</span>
-            <span>•</span>
-            <span className="text-slate-900">📊 {totalPosts} bài đăng</span>
+            <span className="text-slate-900">📊 {filteredEntries.length} bài đăng</span>
             <span>•</span>
             <span className="text-emerald-600 font-extrabold">📈 {totalReachSum.toLocaleString()} Reach</span>
             <span>•</span>
@@ -406,14 +404,83 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        {/* MULTI-DATE FILTER BAR */}
+        <div className="flex flex-wrap items-center gap-2 bg-slate-100 p-2 rounded-2xl border border-slate-200">
+          <div className="flex bg-white rounded-xl p-1 shadow-sm font-extrabold text-xs">
+            <button 
+              onClick={() => setFilterType('TODAY')} 
+              className={`px-3 py-1.5 rounded-lg transition ${filterType === 'TODAY' ? 'bg-sky-600 text-white shadow' : 'text-slate-600 hover:text-slate-900'}`}
+            >
+              Hôm Nay
+            </button>
+            <button 
+              onClick={() => setFilterType('MONTH')} 
+              className={`px-3 py-1.5 rounded-lg transition ${filterType === 'MONTH' ? 'bg-sky-600 text-white shadow' : 'text-slate-600 hover:text-slate-900'}`}
+            >
+              Theo Tháng
+            </button>
+            <button 
+              onClick={() => setFilterType('YEAR')} 
+              className={`px-3 py-1.5 rounded-lg transition ${filterType === 'YEAR' ? 'bg-sky-600 text-white shadow' : 'text-slate-600 hover:text-slate-900'}`}
+            >
+              Theo Năm
+            </button>
+            <button 
+              onClick={() => setFilterType('ALL')} 
+              className={`px-3 py-1.5 rounded-lg transition ${filterType === 'ALL' ? 'bg-sky-600 text-white shadow' : 'text-slate-600 hover:text-slate-900'}`}
+            >
+              Tất Cả
+            </button>
+          </div>
+
+          {/* Sub-selectors depending on FilterType */}
+          {filterType === 'TODAY' && (
+            <input 
+              type="date" 
+              value={selectedDate} 
+              onChange={e => setSelectedDate(e.target.value)} 
+              className="bg-white border border-slate-200 px-3 py-1.5 rounded-xl text-xs font-bold text-slate-800"
+            />
+          )}
+
+          {filterType === 'MONTH' && (
+            <div className="flex items-center gap-1.5">
+              <select 
+                value={selectedMonth} 
+                onChange={e => setSelectedMonth(Number(e.target.value))} 
+                className="bg-white border border-slate-200 px-2.5 py-1.5 rounded-xl text-xs font-bold text-slate-800"
+              >
+                {Array.from({length: 12}, (_, i) => (
+                  <option key={i+1} value={i+1}>Tháng {i+1}</option>
+                ))}
+              </select>
+              <select 
+                value={selectedYear} 
+                onChange={e => setSelectedYear(Number(e.target.value))} 
+                className="bg-white border border-slate-200 px-2.5 py-1.5 rounded-xl text-xs font-bold text-slate-800"
+              >
+                {[2025, 2026, 2027].map(y => <option key={y} value={y}>Năm {y}</option>)}
+              </select>
+            </div>
+          )}
+
+          {filterType === 'YEAR' && (
+            <select 
+              value={selectedYear} 
+              onChange={e => setSelectedYear(Number(e.target.value))} 
+              className="bg-white border border-slate-200 px-2.5 py-1.5 rounded-xl text-xs font-bold text-slate-800"
+            >
+              {[2025, 2026, 2027].map(y => <option key={y} value={y}>Năm {y}</option>)}
+            </select>
+          )}
+
           <button 
             onClick={generatePDF} 
             disabled={isExportingPDF}
-            className="bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white px-5 py-2.5 rounded-xl font-extrabold transition shadow-md text-sm flex items-center gap-2"
+            className="bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white px-4 py-2 rounded-xl font-extrabold transition shadow-md text-xs flex items-center gap-1.5 ml-auto"
           >
-            <span className="text-base">📄</span>
-            <span>{isExportingPDF ? 'Đang xuất...' : 'Xuất PDF Chuyên Nghiệp'}</span>
+            <span>📄</span>
+            <span>{isExportingPDF ? 'Đang xuất...' : 'Xuất PDF Báo Cáo'}</span>
           </button>
         </div>
       </div>
@@ -421,7 +488,7 @@ export default function Home() {
       {/* SIDE-BY-SIDE DUAL WORKSPACE */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         
-        {/* LEFT WORKSPACE: FORM INPUT (5 COLS - LARGER FONT SIZES) */}
+        {/* LEFT WORKSPACE: FORM INPUT */}
         <div className="lg:col-span-5 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
              <h2 className="font-black text-base text-slate-900 flex items-center gap-2">
@@ -435,7 +502,7 @@ export default function Home() {
              )}
            </div>
 
-           {/* Input Tab selector - LARGER TEXT */}
+           {/* Input Tab selector */}
            <div className="flex gap-1.5 p-1.5 bg-slate-100 rounded-xl text-sm font-extrabold">
               {tabs.map(t => {
                 let activeColor = 'bg-sky-600 text-white shadow-sm';
@@ -455,7 +522,18 @@ export default function Home() {
               })}
            </div>
 
-           {/* AUTOMATED LINK INPUT - LARGER INPUT */}
+           {/* Select Date for Report */}
+           <div>
+             <label className="block text-xs font-black text-slate-800 uppercase tracking-wide mb-1.5">Ngày Báo Cáo</label>
+             <input 
+               type="date" 
+               className="w-full border border-slate-200 p-3 rounded-xl text-sm font-bold text-slate-900 bg-white" 
+               value={form.date} 
+               onChange={e => setForm({...form, date: e.target.value})}
+             />
+           </div>
+
+           {/* AUTOMATED LINK INPUT */}
            <div>
              <div className="flex justify-between items-center mb-1.5">
                <label className="block text-xs font-black text-slate-800 uppercase tracking-wide">Link ({activeTab})</label>
@@ -509,23 +587,24 @@ export default function Home() {
                </div>
              </div>
            )}
-          {/* TikTok Specific Controls */}
-          {activeTab === 'TikTok' && (
-            <div>
-              <label className="block text-xs font-black text-slate-800 uppercase tracking-wide mb-1.5">Kênh TikTok</label>
-              <select 
-                className="w-full border border-slate-200 p-3 rounded-xl text-sm font-bold text-slate-900 bg-white" 
-                value={form.group} 
-                onChange={e => setForm({...form, group: e.target.value})}
-              >
-                <option value="">-- Chọn Kênh TikTok --</option>
-                {ttChannels.map((c, i) => <option key={i} value={c.name}>{c.name}</option>)}
-              </select>
-            </div>
-          )}
 
-          {/* Time & Reach with Presets */}
-          <div className="grid grid-cols-2 gap-3">
+           {/* TikTok Specific Controls */}
+           {activeTab === 'TikTok' && (
+             <div>
+               <label className="block text-xs font-black text-slate-800 uppercase tracking-wide mb-1.5">Kênh TikTok</label>
+               <select 
+                 className="w-full border border-slate-200 p-3 rounded-xl text-sm font-bold text-slate-900 bg-white" 
+                 value={form.group} 
+                 onChange={e => setForm({...form, group: e.target.value})}
+               >
+                 <option value="">-- Chọn Kênh TikTok --</option>
+                 {ttChannels.map((c, i) => <option key={i} value={c.name}>{c.name}</option>)}
+               </select>
+             </div>
+           )}
+
+           {/* Time & Reach with Presets */}
+           <div className="grid grid-cols-2 gap-3">
                <div>
                  <div className="flex justify-between items-center mb-1.5">
                    <label className="block text-xs font-black text-slate-800 uppercase tracking-wide">Giờ đăng</label>
@@ -539,7 +618,7 @@ export default function Home() {
                  <input className="w-full border border-slate-200 p-3 rounded-xl text-sm font-bold text-slate-900" placeholder="Số lượt..." value={form.reach} onChange={e => setForm({...form, reach: e.target.value})} />
                  <div className="flex gap-1.5 mt-1.5">
                    {[500, 1000, 5000].map((amt) => (
-                     <button key={amt} type="button" onClick={() => addReachPreset(amt)} className="px-2 py-1 bg-slate-100 hover:bg-sky-100 hover:text-sky-700 text-slate-700 rounded-lg text-xs font-extrabold transition">
+                     <button key={amt} type="button" onClick={() => setForm(prev => ({ ...prev, reach: ((parseInt(prev.reach) || 0) + amt).toString() }))} className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-1 rounded-lg text-xs font-extrabold">
                        +{amt >= 1000 ? `${amt/1000}k` : amt}
                      </button>
                    ))}
@@ -547,34 +626,28 @@ export default function Home() {
                </div>
            </div>
 
-           {/* Hook & Image */}
+           {/* Hook & Suggestion */}
            <div className="grid grid-cols-2 gap-3">
              <div>
                <label className="block text-xs font-black text-slate-800 uppercase tracking-wide mb-1.5">Câu Hook / Tiêu đề</label>
                <input className="w-full border border-slate-200 p-3 rounded-xl text-sm font-semibold text-slate-900" placeholder="Ghi chú câu hook..." value={form.hook} onChange={e => setForm({...form, hook: e.target.value})} />
              </div>
+
              <div>
-               <label className="block text-xs font-black text-slate-800 uppercase tracking-wide mb-1.5">Ảnh đính kèm</label>
-               <div className="border border-dashed border-slate-300 p-3 rounded-xl cursor-pointer bg-slate-50 text-xs font-bold text-slate-700 truncate hover:bg-slate-100 transition" onClick={() => fileInputRef.current?.click()}>
-                 {image ? '✅ Đã chọn ảnh' : '📷 Click tải ảnh'}
-                 <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={(e) => {
-                    const reader = new FileReader();
-                    reader.onloadend = () => setImage(reader.result as string);
-                    if(e.target.files?.[0]) reader.readAsDataURL(e.target.files[0]);
-                 }} />
-               </div>
+               <label className="block text-xs font-black text-slate-800 uppercase tracking-wide mb-1.5">Đề xuất tối ưu</label>
+               <input className="w-full border border-slate-200 p-3 rounded-xl text-sm font-semibold text-slate-900" placeholder="Ý tưởng sửa..." value={form.suggestion} onChange={e => setForm({...form, suggestion: e.target.value})} />
              </div>
            </div>
 
            {/* Share Toggle */}
-           <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-200">
-             <span className="text-sm font-black text-slate-800">Trạng thái Share?</span>
+           <div className="flex items-center justify-between p-3.5 bg-slate-50 rounded-xl border border-slate-200">
+             <span className="text-sm font-extrabold text-slate-800">Đã chia sẻ vào các nhóm?</span>
              <button 
-               type="button"
+               type="button" 
                onClick={() => setIsShared(!isShared)} 
-               className={`px-5 py-1.5 rounded-xl font-extrabold text-xs transition shadow-sm ${isShared ? 'bg-emerald-600 text-white' : 'bg-rose-500 text-white'}`}
+               className={`px-4 py-2 rounded-xl text-xs font-black transition ${isShared ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-700'}`}
              >
-               {isShared ? '✓ Đã Share' : '✕ Chưa Share'}
+               {isShared ? '✓ ĐÃ CHIA SẺ' : '✕ CHƯA CHIA SẺ'}
              </button>
            </div>
 
@@ -587,7 +660,7 @@ export default function Home() {
            </button>
         </div>
 
-        {/* RIGHT WORKSPACE: DUAL-TABBED DISPLAY WITH LARGER FONT */}
+        {/* RIGHT WORKSPACE: DUAL-TABBED DISPLAY */}
         <div className="lg:col-span-7 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
            
            {/* Right Panel Main Tabs */}
@@ -598,7 +671,7 @@ export default function Home() {
                  onClick={() => setRightTab('REPORTS')} 
                  className={`px-4 py-2.5 rounded-xl font-black text-xs transition ${rightTab === 'REPORTS' ? 'bg-slate-900 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:text-slate-900'}`}
                >
-                 📊 Báo Cáo Hôm Nay ({filteredEntries.length})
+                 📊 Báo Cáo ({filteredEntries.length})
                </button>
                <button 
                  type="button"
@@ -619,7 +692,7 @@ export default function Home() {
              )}
            </div>
 
-           {/* RIGHT TAB 1: REPORTS LIST - LARGER TABLE FONT */}
+           {/* RIGHT TAB 1: REPORTS LIST */}
            {rightTab === 'REPORTS' && (
              <div>
                {/* List Platform Filter Pills */}
@@ -645,9 +718,10 @@ export default function Home() {
                  <table className="w-full text-left text-sm">
                      <thead className="sticky top-0 bg-white shadow-sm z-10">
                        <tr className="border-b border-slate-200 text-slate-500 font-black uppercase text-xs">
-                         <th className="py-2.5 px-1">Nền</th>
+                         <th className="py-2.5 px-1">Ngày</th>
+                         <th className="px-1">Nền</th>
                          <th className="px-1">Giờ</th>
-                         <th className="px-1">Nhóm/Loại</th>
+                         <th className="px-1">Nhóm/Kênh</th>
                          <th className="px-1">Link</th>
                          <th className="px-1">Reach</th>
                          <th className="px-1">Share</th>
@@ -658,31 +732,32 @@ export default function Home() {
                      <tbody>
                        {filteredEntries.length === 0 ? (
                          <tr>
-                           <td colSpan={7} className="py-12 text-center text-slate-400 font-semibold text-sm">
+                           <td colSpan={9} className="py-12 text-center text-slate-400 font-semibold text-sm">
                              Chưa có báo cáo nào trong mục này.
                            </td>
                          </tr>
                        ) : filteredEntries.map(e => (
                         <tr key={e.id} className="border-b border-slate-100 hover:bg-slate-50/80 transition">
+                            <td className="py-3 px-1 font-bold text-slate-500 text-xs">{e.date || '--'}</td>
                             <td className="py-3 px-1 font-bold">
-                              <span className={`px-2.5 py-1 rounded-md text-xs font-extrabold ${e.platform === 'YouTube' ? 'bg-red-100 text-red-700' : e.platform === 'Facebook' ? 'bg-sky-100 text-sky-700' : 'bg-slate-950 text-white'}`}>
+                              <span className={`px-2 py-0.5 rounded text-[11px] font-extrabold ${e.platform === 'YouTube' ? 'bg-red-100 text-red-700' : e.platform === 'Facebook' ? 'bg-sky-100 text-sky-700' : 'bg-slate-950 text-white'}`}>
                                 {e.platform}
                               </span>
                             </td>
-                            <td className="py-3 px-1 font-bold text-slate-800 text-sm">{e.time || '--:--'}</td>
-                            <td className="py-3 px-1 font-semibold text-slate-700 truncate max-w-[120px] text-xs">{e.group || '--'}</td>
+                            <td className="py-3 px-1 font-bold text-slate-800 text-xs">{e.time || '--:--'}</td>
+                            <td className="py-3 px-1 font-semibold text-slate-700 truncate max-w-[100px] text-xs">{e.group || '--'}</td>
                             <td className="py-3 px-1">
-                              <a href={e.link.startsWith('http') ? e.link : `https://${e.link}`} target="_blank" rel="noopener noreferrer" className="text-sky-600 font-extrabold hover:underline bg-sky-50 px-2.5 py-1 rounded-lg text-xs">
+                              <a href={e.link.startsWith('http') ? e.link : `https://${e.link}`} target="_blank" rel="noopener noreferrer" className="text-sky-600 font-extrabold hover:underline bg-sky-50 px-2 py-0.5 rounded text-xs">
                                 Mở ↗
                               </a>
                             </td>
-                            <td className="py-3 px-1 font-black text-slate-900 text-sm">{e.reach ? parseInt(e.reach).toLocaleString() : '0'}</td>
-                            <td className="py-3 px-1">{e.isShared ? <span className="text-emerald-700 font-extrabold text-sm">✓</span> : <span className="text-slate-300 font-bold text-sm">✕</span>}</td>
-                            <td className="py-3 px-1 hidden md:table-cell max-w-[160px] truncate text-slate-600 font-medium text-xs">{e.hook || '--'}</td>
+                            <td className="py-3 px-1 font-black text-slate-900 text-xs">{e.reach ? parseInt(e.reach).toLocaleString() : '0'}</td>
+                            <td className="py-3 px-1">{e.isShared ? <span className="text-emerald-700 font-extrabold text-xs">✓</span> : <span className="text-slate-300 font-bold text-xs">✕</span>}</td>
+                            <td className="py-3 px-1 hidden md:table-cell max-w-[120px] truncate text-slate-600 font-medium text-xs">{e.hook || '--'}</td>
                             <td className="py-3 px-1 text-right">
-                              <div className="flex justify-end gap-1.5">
-                                <button onClick={() => startEdit(e)} className="bg-amber-50 hover:bg-amber-100 text-amber-700 px-2.5 py-1 rounded-lg font-extrabold text-xs">Sửa</button>
-                                <button onClick={() => handleDelete(e.id)} className="bg-rose-50 hover:bg-rose-100 text-rose-700 px-2.5 py-1 rounded-lg font-extrabold text-xs">Xóa</button>
+                              <div className="flex justify-end gap-1">
+                                <button onClick={() => startEdit(e)} className="bg-amber-50 hover:bg-amber-100 text-amber-700 px-2 py-1 rounded font-extrabold text-xs">Sửa</button>
+                                <button onClick={() => handleDelete(e.id)} className="bg-rose-50 hover:bg-rose-100 text-rose-700 px-2 py-1 rounded font-extrabold text-xs">Xóa</button>
                               </div>
                             </td>
                         </tr>
