@@ -118,7 +118,7 @@ export default function Home() {
     const newGroups = [...groups, {name: groupName, link: groupLink}];
     await fetch('/api/groups', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(newGroups) });
     setGroupName(''); setGroupLink(''); fetchData();
-    showToast('✅ Đã lưu nhóm Facebook mới vĩnh viễn!');
+    showToast('✅ Đã lưu nhóm Facebook mới!');
   };
 
   const addYtChannel = async () => {
@@ -126,7 +126,7 @@ export default function Home() {
     const newChannels = [...ytChannels, {name: ytChannelName, link: ytChannelLink}];
     await fetch('/api/yt-channels', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(newChannels) });
     setYtChannelName(''); setYtChannelLink(''); fetchData();
-    showToast('✅ Đã lưu kênh YouTube mới vĩnh viễn!');
+    showToast('✅ Đã lưu kênh YouTube mới!');
   };
 
   const handleSubmit = async () => {
@@ -164,7 +164,7 @@ export default function Home() {
     setIsShared(false); 
     setEditingId(null);
     fetchData();
-    showToast(editingId ? '🎉 Đã cập nhật báo cáo thành công!' : '🎉 Đã thêm báo cáo mới thành công!');
+    showToast(editingId ? '🎉 Đã cập nhật báo cáo thành công!' : '🎉 Đã thêm báo cáo mới!');
   };
 
   const handleDelete = async (id: number) => {
@@ -187,7 +187,7 @@ export default function Home() {
     });
     setIsShared(entry.isShared || false);
     setActiveTab(entry.platform || 'Facebook');
-    showToast('✏️ Đã tải dữ liệu lên form để chỉnh sửa!');
+    showToast('✏️ Đã tải dữ liệu lên form để sửa!');
   };
 
   // Modern PDF Export Engine
@@ -242,7 +242,7 @@ export default function Home() {
         theme: 'grid',
         styles: {
           font: 'Roboto',
-          fontSize: 8,
+          fontSize: 9,
           cellPadding: 3,
           valign: 'middle',
           overflow: 'linebreak'
@@ -270,7 +270,7 @@ export default function Home() {
       });
 
       doc.save(`Bao_Cao_Cong_Viec_${today.replace(/\//g, '-')}.pdf`);
-      showToast('📄 Đã xuất file PDF báo cáo thành công!');
+      showToast('📄 Đã xuất file PDF báo cáo!');
     } catch (error) {
       alert("Lỗi xuất PDF: " + error);
     } finally {
@@ -297,69 +297,69 @@ export default function Home() {
     <Layout>
       {/* Toast Notification */}
       {notification && (
-        <div className="fixed top-4 right-4 z-50 bg-slate-950 text-white px-4 py-2.5 rounded-2xl shadow-2xl border border-slate-700 flex items-center gap-2.5 animate-bounce text-xs font-semibold">
-          <span className="text-emerald-400 font-bold">✨</span>
+        <div className="fixed top-4 right-4 z-50 bg-slate-950 text-white px-5 py-3 rounded-2xl shadow-2xl border border-slate-700 flex items-center gap-3 animate-bounce text-sm font-bold">
+          <span className="text-emerald-400">✨</span>
           <span>{notification}</span>
         </div>
       )}
 
-      {/* COMPACT SINGLE-SCREEN TOP HEADER */}
-      <div className="flex flex-wrap items-center justify-between gap-4 mb-5 pb-3 border-b border-slate-200">
+      {/* TOP HEADER - LARGER TYPOGRAPHY */}
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-200">
         <div>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight">Dashboard Báo Cáo (Single Screen)</h1>
-          <div className="flex items-center gap-3 text-xs text-slate-500 mt-0.5">
+          <h1 className="text-3xl font-black text-slate-900 tracking-tight">Dashboard Báo Cáo Nội Dung</h1>
+          <div className="flex items-center gap-3 text-sm text-slate-600 mt-1 font-bold">
             <span>📅 {new Date().toLocaleDateString('vi-VN')}</span>
             <span>•</span>
-            <span className="font-bold text-slate-800">📊 {totalPosts} bài đăng</span>
+            <span className="text-slate-900">📊 {totalPosts} bài đăng</span>
             <span>•</span>
-            <span className="font-bold text-emerald-600">📈 {totalReachSum.toLocaleString()} Reach</span>
+            <span className="text-emerald-600 font-extrabold">📈 {totalReachSum.toLocaleString()} Reach</span>
             <span>•</span>
-            <span className="font-bold text-sky-600">🚀 {sharedCount} shared</span>
+            <span className="text-sky-600 font-extrabold">🚀 {sharedCount} shared</span>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <button 
             onClick={generatePDF} 
             disabled={isExportingPDF}
-            className="bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white px-4 py-2 rounded-xl font-bold transition shadow-sm text-xs flex items-center gap-1.5"
+            className="bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white px-5 py-2.5 rounded-xl font-extrabold transition shadow-md text-sm flex items-center gap-2"
           >
-            <span>📄</span>
-            <span>{isExportingPDF ? 'Đang xuất...' : 'Xuất PDF'}</span>
+            <span className="text-base">📄</span>
+            <span>{isExportingPDF ? 'Đang xuất...' : 'Xuất PDF Chuyên Nghiệp'}</span>
           </button>
         </div>
       </div>
 
-      {/* SIDE-BY-SIDE DUAL WORKSPACE (NO SCROLLING NEEDED!) */}
+      {/* SIDE-BY-SIDE DUAL WORKSPACE */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         
-        {/* LEFT WORKSPACE: FORM INPUT (5 COLS) */}
-        <div className="lg:col-span-5 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3.5">
-           <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-             <h2 className="font-black text-sm text-slate-900 flex items-center gap-1.5">
-               <span>✍️</span> 
-               <span>{editingId ? 'Sửa Báo Cáo' : 'Nhập Báo Cáo Mới'}</span>
+        {/* LEFT WORKSPACE: FORM INPUT (5 COLS - LARGER FONT SIZES) */}
+        <div className="lg:col-span-5 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+           <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+             <h2 className="font-black text-base text-slate-900 flex items-center gap-2">
+               <span className="text-lg">✍️</span> 
+               <span>{editingId ? 'Chỉnh Sửa Báo Cáo' : 'Nhập Báo Cáo Mới'}</span>
              </h2>
              {editingId && (
-               <button onClick={() => setEditingId(null)} className="text-[11px] text-slate-500 hover:text-slate-800 underline font-semibold">
+               <button onClick={() => setEditingId(null)} className="text-xs text-slate-500 hover:text-slate-800 underline font-bold">
                  Hủy
                </button>
              )}
            </div>
 
-           {/* Input Tab selector */}
-           <div className="flex gap-1 p-1 bg-slate-100 rounded-xl text-xs">
+           {/* Input Tab selector - LARGER TEXT */}
+           <div className="flex gap-1.5 p-1.5 bg-slate-100 rounded-xl text-sm font-extrabold">
               {tabs.map(t => {
-                let activeColor = 'bg-sky-600 text-white font-bold';
-                if (t === 'YouTube') activeColor = 'bg-red-600 text-white font-bold';
-                if (t === 'TikTok') activeColor = 'bg-slate-950 text-white font-bold';
+                let activeColor = 'bg-sky-600 text-white shadow-sm';
+                if (t === 'YouTube') activeColor = 'bg-red-600 text-white shadow-sm';
+                if (t === 'TikTok') activeColor = 'bg-slate-950 text-white shadow-sm';
 
                 return (
                   <button 
                     key={t} 
                     type="button"
                     onClick={() => setActiveTab(t)} 
-                    className={`flex-1 py-1.5 rounded-lg transition ${activeTab === t ? activeColor : 'text-slate-600 hover:text-slate-900'}`}
+                    className={`flex-1 py-2 rounded-lg transition ${activeTab === t ? activeColor : 'text-slate-600 hover:text-slate-900'}`}
                   >
                     {t === 'YouTube' ? '🎬 YT' : t === 'Facebook' ? '📘 FB' : '🎵 TT'}
                   </button>
@@ -367,15 +367,15 @@ export default function Home() {
               })}
            </div>
 
-           {/* AUTOMATED LINK INPUT */}
+           {/* AUTOMATED LINK INPUT - LARGER INPUT */}
            <div>
-             <div className="flex justify-between items-center mb-1">
-               <label className="block text-[11px] font-extrabold text-slate-700 uppercase">Link ({activeTab})</label>
-               <span className="text-[10px] text-sky-600 font-bold">⚡ Dán link tự chọn Tab</span>
+             <div className="flex justify-between items-center mb-1.5">
+               <label className="block text-xs font-black text-slate-800 uppercase tracking-wide">Link ({activeTab})</label>
+               <span className="text-xs text-sky-600 font-extrabold">⚡ Dán link tự chọn Tab</span>
              </div>
              <input 
-               className="w-full border border-slate-200 p-2.5 rounded-xl text-xs font-medium focus:ring-2 focus:ring-sky-500" 
-               placeholder="Dán link bài viết / video..." 
+               className="w-full border border-slate-200 p-3 rounded-xl text-sm font-semibold text-slate-900 focus:ring-2 focus:ring-sky-500 focus:border-sky-500" 
+               placeholder="Dán link bài viết / video tại đây..." 
                value={form.link} 
                onChange={e => handleLinkChange(e.target.value)} 
              />
@@ -384,8 +384,8 @@ export default function Home() {
            {/* Facebook Group Selector */}
            {activeTab === 'Facebook' && (
              <div>
-               <label className="block text-[11px] font-extrabold text-slate-700 uppercase mb-1">Nhóm Facebook</label>
-               <select className="w-full border border-slate-200 p-2 rounded-xl text-xs font-medium" value={form.group} onChange={e => setForm({...form, group: e.target.value})}>
+               <label className="block text-xs font-black text-slate-800 uppercase tracking-wide mb-1.5">Nhóm Facebook</label>
+               <select className="w-full border border-slate-200 p-3 rounded-xl text-sm font-bold text-slate-900" value={form.group} onChange={e => setForm({...form, group: e.target.value})}>
                  <option value="">-- Chọn nhóm Facebook --</option>
                  {groups.map((g, i) => <option key={i} value={g.name}>{g.name}</option>)}
                </select>
@@ -394,11 +394,11 @@ export default function Home() {
 
            {/* YouTube Specific Controls */}
            {activeTab === 'YouTube' && (
-             <div className="grid grid-cols-2 gap-2 bg-red-50/80 p-2.5 rounded-xl border border-red-100 text-xs">
+             <div className="grid grid-cols-2 gap-3 bg-red-50/90 p-3 rounded-xl border border-red-100 text-xs">
                <div>
-                 <label className="block text-[10px] font-extrabold text-red-800 uppercase mb-1">Loại Video</label>
+                 <label className="block text-xs font-black text-red-900 uppercase mb-1">Loại Video</label>
                  <select 
-                   className="w-full border border-red-200 p-1.5 rounded-lg bg-white font-semibold text-xs" 
+                   className="w-full border border-red-200 p-2 rounded-lg bg-white font-extrabold text-sm text-slate-900" 
                    value={form.videoType} 
                    onChange={e => setForm({...form, videoType: e.target.value})}
                  >
@@ -409,9 +409,9 @@ export default function Home() {
                  </select>
                </div>
                <div>
-                 <label className="block text-[10px] font-extrabold text-red-800 uppercase mb-1">Kênh YT</label>
+                 <label className="block text-xs font-black text-red-900 uppercase mb-1">Kênh YT</label>
                  <select 
-                   className="w-full border border-red-200 p-1.5 rounded-lg bg-white font-semibold text-xs" 
+                   className="w-full border border-red-200 p-2 rounded-lg bg-white font-extrabold text-sm text-slate-900" 
                    value={form.group} 
                    onChange={e => setForm({...form, group: e.target.value})}
                  >
@@ -425,19 +425,19 @@ export default function Home() {
            {/* Time & Reach with Presets */}
            <div className="grid grid-cols-2 gap-3">
                <div>
-                 <div className="flex justify-between items-center mb-1">
-                   <label className="block text-[11px] font-extrabold text-slate-700 uppercase">Giờ đăng</label>
-                   <button type="button" onClick={() => setForm(prev => ({ ...prev, time: getCurrentTime() }))} className="text-[10px] text-sky-600 font-bold">⏰ Hiện tại</button>
+                 <div className="flex justify-between items-center mb-1.5">
+                   <label className="block text-xs font-black text-slate-800 uppercase tracking-wide">Giờ đăng</label>
+                   <button type="button" onClick={() => setForm(prev => ({ ...prev, time: getCurrentTime() }))} className="text-xs text-sky-600 font-extrabold hover:underline">⏰ Giờ này</button>
                  </div>
-                 <input className="w-full border border-slate-200 p-2 rounded-xl text-xs font-semibold" placeholder="HH:mm" value={form.time} onChange={e => setForm({...form, time: e.target.value})} />
+                 <input className="w-full border border-slate-200 p-3 rounded-xl text-sm font-bold text-slate-900" placeholder="HH:mm" value={form.time} onChange={e => setForm({...form, time: e.target.value})} />
                </div>
 
                <div>
-                 <label className="block text-[11px] font-extrabold text-slate-700 uppercase mb-1">Reach / Views</label>
-                 <input className="w-full border border-slate-200 p-2 rounded-xl text-xs font-semibold" placeholder="Số lượt..." value={form.reach} onChange={e => setForm({...form, reach: e.target.value})} />
-                 <div className="flex gap-1 mt-1">
+                 <label className="block text-xs font-black text-slate-800 uppercase tracking-wide mb-1.5">Reach / Views</label>
+                 <input className="w-full border border-slate-200 p-3 rounded-xl text-sm font-bold text-slate-900" placeholder="Số lượt..." value={form.reach} onChange={e => setForm({...form, reach: e.target.value})} />
+                 <div className="flex gap-1.5 mt-1.5">
                    {[500, 1000, 5000].map((amt) => (
-                     <button key={amt} type="button" onClick={() => addReachPreset(amt)} className="px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded text-[10px] font-bold">
+                     <button key={amt} type="button" onClick={() => addReachPreset(amt)} className="px-2 py-1 bg-slate-100 hover:bg-sky-100 hover:text-sky-700 text-slate-700 rounded-lg text-xs font-extrabold transition">
                        +{amt >= 1000 ? `${amt/1000}k` : amt}
                      </button>
                    ))}
@@ -446,15 +446,15 @@ export default function Home() {
            </div>
 
            {/* Hook & Image */}
-           <div className="grid grid-cols-2 gap-2">
+           <div className="grid grid-cols-2 gap-3">
              <div>
-               <label className="block text-[11px] font-extrabold text-slate-700 uppercase mb-1">Câu Hook / Tiêu đề</label>
-               <input className="w-full border border-slate-200 p-2 rounded-xl text-xs font-medium" placeholder="Ghi chú câu hook..." value={form.hook} onChange={e => setForm({...form, hook: e.target.value})} />
+               <label className="block text-xs font-black text-slate-800 uppercase tracking-wide mb-1.5">Câu Hook / Tiêu đề</label>
+               <input className="w-full border border-slate-200 p-3 rounded-xl text-sm font-semibold text-slate-900" placeholder="Ghi chú câu hook..." value={form.hook} onChange={e => setForm({...form, hook: e.target.value})} />
              </div>
              <div>
-               <label className="block text-[11px] font-extrabold text-slate-700 uppercase mb-1">Ảnh đính kèm</label>
-               <div className="border border-dashed border-slate-300 p-2 rounded-xl cursor-pointer bg-slate-50 text-[11px] truncate font-medium" onClick={() => fileInputRef.current?.click()}>
-                 {image ? '✅ Đã chọn ảnh' : '📷 Tải ảnh'}
+               <label className="block text-xs font-black text-slate-800 uppercase tracking-wide mb-1.5">Ảnh đính kèm</label>
+               <div className="border border-dashed border-slate-300 p-3 rounded-xl cursor-pointer bg-slate-50 text-xs font-bold text-slate-700 truncate hover:bg-slate-100 transition" onClick={() => fileInputRef.current?.click()}>
+                 {image ? '✅ Đã chọn ảnh' : '📷 Click tải ảnh'}
                  <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={(e) => {
                     const reader = new FileReader();
                     reader.onloadend = () => setImage(reader.result as string);
@@ -465,28 +465,28 @@ export default function Home() {
            </div>
 
            {/* Share Toggle */}
-           <div className="flex items-center justify-between p-2 bg-slate-50 rounded-xl border border-slate-200">
-             <span className="text-xs font-bold text-slate-700">Đã Share?</span>
+           <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-200">
+             <span className="text-sm font-black text-slate-800">Trạng thái Share?</span>
              <button 
                type="button"
                onClick={() => setIsShared(!isShared)} 
-               className={`px-4 py-1 rounded-lg font-bold text-xs ${isShared ? 'bg-emerald-600 text-white' : 'bg-rose-500 text-white'}`}
+               className={`px-5 py-1.5 rounded-xl font-extrabold text-xs transition shadow-sm ${isShared ? 'bg-emerald-600 text-white' : 'bg-rose-500 text-white'}`}
              >
-               {isShared ? '✓ Có' : '✕ Chưa'}
+               {isShared ? '✓ Đã Share' : '✕ Chưa Share'}
              </button>
            </div>
 
            <button 
              type="button"
              onClick={handleSubmit} 
-             className={`w-full py-3 rounded-xl font-bold text-white transition text-xs shadow-md ${activeTab === 'YouTube' ? 'bg-red-600 hover:bg-red-700' : 'bg-slate-950 hover:bg-slate-800'}`}
+             className={`w-full py-3.5 rounded-xl font-black text-white transition text-sm shadow-md ${activeTab === 'YouTube' ? 'bg-red-600 hover:bg-red-700' : 'bg-slate-950 hover:bg-slate-800'}`}
            >
              {editingId ? 'Cập Nhật Báo Cáo' : `Lưu Báo Cáo ${activeTab}`}
            </button>
         </div>
 
-        {/* RIGHT WORKSPACE: DUAL-TABBED DISPLAY (7 COLS - NO SCROLLING NEEDED!) */}
-        <div className="lg:col-span-7 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+        {/* RIGHT WORKSPACE: DUAL-TABBED DISPLAY WITH LARGER FONT */}
+        <div className="lg:col-span-7 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
            
            {/* Right Panel Main Tabs */}
            <div className="flex justify-between items-center border-b border-slate-100 pb-3">
@@ -494,14 +494,14 @@ export default function Home() {
                <button 
                  type="button"
                  onClick={() => setRightTab('REPORTS')} 
-                 className={`px-4 py-2 rounded-xl font-black text-xs transition ${rightTab === 'REPORTS' ? 'bg-slate-900 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:text-slate-900'}`}
+                 className={`px-4 py-2.5 rounded-xl font-black text-xs transition ${rightTab === 'REPORTS' ? 'bg-slate-900 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:text-slate-900'}`}
                >
                  📊 Báo Cáo Hôm Nay ({filteredEntries.length})
                </button>
                <button 
                  type="button"
                  onClick={() => setRightTab('MANAGEMENT')} 
-                 className={`px-4 py-2 rounded-xl font-black text-xs transition ${rightTab === 'MANAGEMENT' ? 'bg-slate-900 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:text-slate-900'}`}
+                 className={`px-4 py-2.5 rounded-xl font-black text-xs transition ${rightTab === 'MANAGEMENT' ? 'bg-slate-900 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:text-slate-900'}`}
                >
                  📋 Quản Lý Nhóm & Kênh
                </button>
@@ -509,19 +509,19 @@ export default function Home() {
 
              {rightTab === 'REPORTS' && (
                <input 
-                 className="border border-slate-200 px-3 py-1.5 rounded-xl text-xs font-semibold w-40 focus:ring-2 focus:ring-sky-500" 
-                 placeholder="🔍 Tìm..." 
+                 className="border border-slate-200 px-3.5 py-2 rounded-xl text-xs font-bold w-44 focus:ring-2 focus:ring-sky-500" 
+                 placeholder="🔍 Tìm kiếm..." 
                  value={searchQuery}
                  onChange={e => setSearchQuery(e.target.value)}
                />
              )}
            </div>
 
-           {/* RIGHT TAB 1: REPORTS LIST */}
+           {/* RIGHT TAB 1: REPORTS LIST - LARGER TABLE FONT */}
            {rightTab === 'REPORTS' && (
              <div>
                {/* List Platform Filter Pills */}
-               <div className="flex gap-1.5 mb-3 p-1 bg-slate-100 rounded-xl text-[11px] font-bold">
+               <div className="flex gap-1.5 mb-3 p-1.5 bg-slate-100 rounded-xl text-xs font-extrabold">
                  {[
                    { id: 'ALL', label: 'Tất Cả', count: entries.length },
                    { id: 'Facebook', label: 'Facebook', count: entries.filter(e => e.platform === 'Facebook').length },
@@ -532,7 +532,7 @@ export default function Home() {
                      key={t.id}
                      type="button"
                      onClick={() => setFilterPlatform(t.id)}
-                     className={`flex-1 py-1 rounded-lg transition ${filterPlatform === t.id ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}
+                     className={`flex-1 py-1.5 rounded-lg transition ${filterPlatform === t.id ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600'}`}
                    >
                      {t.label} ({t.count})
                    </button>
@@ -540,45 +540,45 @@ export default function Home() {
                </div>
 
                <div className="max-h-[460px] overflow-y-auto pr-1">
-                 <table className="w-full text-left text-xs">
+                 <table className="w-full text-left text-sm">
                      <thead className="sticky top-0 bg-white shadow-sm z-10">
-                       <tr className="border-b border-slate-200 text-slate-400 font-extrabold uppercase">
-                         <th className="py-2">Nền</th>
+                       <tr className="border-b border-slate-200 text-slate-500 font-black uppercase text-xs">
+                         <th className="py-2.5">Nền</th>
                          <th>Giờ</th>
                          <th>Nhóm/Loại</th>
                          <th>Link</th>
                          <th>Reach</th>
                          <th>Share</th>
-                         <th className="text-right">Sửa/Xóa</th>
+                         <th className="text-right">Hành động</th>
                        </tr>
                      </thead>
                      <tbody>
                        {filteredEntries.length === 0 ? (
                          <tr>
-                           <td colSpan={7} className="py-12 text-center text-slate-400 font-medium">
+                           <td colSpan={7} className="py-12 text-center text-slate-400 font-semibold text-sm">
                              Chưa có báo cáo nào trong mục này.
                            </td>
                          </tr>
                        ) : filteredEntries.map(e => (
                          <tr key={e.id} className="border-b border-slate-100 hover:bg-slate-50/80 transition">
-                             <td className="py-2.5 font-bold">
-                               <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold ${e.platform === 'YouTube' ? 'bg-red-100 text-red-700' : e.platform === 'Facebook' ? 'bg-sky-100 text-sky-700' : 'bg-slate-950 text-white'}`}>
+                             <td className="py-3 font-bold">
+                               <span className={`px-2.5 py-1 rounded-md text-xs font-extrabold ${e.platform === 'YouTube' ? 'bg-red-100 text-red-700' : e.platform === 'Facebook' ? 'bg-sky-100 text-sky-700' : 'bg-slate-950 text-white'}`}>
                                  {e.platform}
                                </span>
                              </td>
-                             <td className="py-2.5 font-bold text-slate-700">{e.time || '--:--'}</td>
-                             <td className="py-2.5 font-medium text-slate-600 truncate max-w-[90px]">{e.group || '--'}</td>
-                             <td className="py-2.5">
-                               <a href={e.link.startsWith('http') ? e.link : `https://${e.link}`} target="_blank" rel="noopener noreferrer" className="text-sky-600 font-bold hover:underline bg-sky-50 px-2 py-1 rounded">
+                             <td className="py-3 font-bold text-slate-800 text-sm">{e.time || '--:--'}</td>
+                             <td className="py-3 font-semibold text-slate-700 truncate max-w-[100px] text-xs">{e.group || '--'}</td>
+                             <td className="py-3">
+                               <a href={e.link.startsWith('http') ? e.link : `https://${e.link}`} target="_blank" rel="noopener noreferrer" className="text-sky-600 font-extrabold hover:underline bg-sky-50 px-2.5 py-1 rounded-lg text-xs">
                                  Mở ↗
                                </a>
                              </td>
-                             <td className="py-2.5 font-extrabold text-slate-900">{e.reach ? parseInt(e.reach).toLocaleString() : '0'}</td>
-                             <td className="py-2.5">{e.isShared ? <span className="text-emerald-700 font-extrabold">✓</span> : <span className="text-slate-300">✕</span>}</td>
-                             <td className="py-2.5 text-right">
+                             <td className="py-3 font-black text-slate-900 text-sm">{e.reach ? parseInt(e.reach).toLocaleString() : '0'}</td>
+                             <td className="py-3">{e.isShared ? <span className="text-emerald-700 font-extrabold text-sm">✓</span> : <span className="text-slate-300 font-bold text-sm">✕</span>}</td>
+                             <td className="py-3 text-right">
                                <div className="flex justify-end gap-1.5">
-                                 <button onClick={() => startEdit(e)} className="bg-amber-50 hover:bg-amber-100 text-amber-700 px-2 py-1 rounded font-bold text-[11px]">Sửa</button>
-                                 <button onClick={() => handleDelete(e.id)} className="bg-rose-50 hover:bg-rose-100 text-rose-700 px-2 py-1 rounded font-bold text-[11px]">Xóa</button>
+                                 <button onClick={() => startEdit(e)} className="bg-amber-50 hover:bg-amber-100 text-amber-700 px-2.5 py-1 rounded-lg font-extrabold text-xs">Sửa</button>
+                                 <button onClick={() => handleDelete(e.id)} className="bg-rose-50 hover:bg-rose-100 text-rose-700 px-2.5 py-1 rounded-lg font-extrabold text-xs">Xóa</button>
                                </div>
                              </td>
                          </tr>
@@ -598,15 +598,15 @@ export default function Home() {
                    <span>📘</span> Quản Lý Nhóm Facebook
                  </h3>
                  <div className="flex gap-2 mb-3">
-                     <input className="border border-slate-200 p-2 rounded-xl w-1/3 text-xs" placeholder="Tên nhóm" value={groupName} onChange={e => setGroupName(e.target.value)} />
-                     <input className="border border-slate-200 p-2 rounded-xl w-1/3 text-xs" placeholder="Link nhóm" value={groupLink} onChange={e => setGroupLink(e.target.value)} />
+                     <input className="border border-slate-200 p-2.5 rounded-xl w-1/3 text-xs font-semibold" placeholder="Tên nhóm" value={groupName} onChange={e => setGroupName(e.target.value)} />
+                     <input className="border border-slate-200 p-2.5 rounded-xl w-1/3 text-xs font-semibold" placeholder="Link nhóm" value={groupLink} onChange={e => setGroupLink(e.target.value)} />
                      <button onClick={addGroup} className="bg-sky-600 hover:bg-sky-700 text-white px-4 rounded-xl font-bold text-xs">Thêm</button>
                  </div>
                  <table className="w-full text-xs">
                      <thead><tr className="border-b border-slate-200 text-slate-400 text-left"><th className="py-1.5">Nhóm FB</th><th className="text-right">Link</th></tr></thead>
                      <tbody>{groups.map((g, i) => (
                        <tr key={i} className="border-b border-slate-100">
-                         <td className="py-2 font-bold">{g.name}</td>
+                         <td className="py-2 font-bold text-slate-800">{g.name}</td>
                          <td className="text-right">
                            <a href={g.link.startsWith('http') ? g.link : `https://${g.link}`} target="_blank" rel="noopener noreferrer" className="text-sky-600 font-bold underline">Mở ↗</a>
                          </td>
@@ -621,8 +621,8 @@ export default function Home() {
                    <span>🎬</span> Quản Lý Kênh YouTube
                  </h3>
                  <div className="flex gap-2 mb-3">
-                     <input className="border border-slate-200 p-2 rounded-xl w-1/3 text-xs" placeholder="Tên kênh" value={ytChannelName} onChange={e => setYtChannelName(e.target.value)} />
-                     <input className="border border-slate-200 p-2 rounded-xl w-1/3 text-xs" placeholder="Link kênh" value={ytChannelLink} onChange={e => setYtChannelLink(e.target.value)} />
+                     <input className="border border-slate-200 p-2.5 rounded-xl w-1/3 text-xs font-semibold" placeholder="Tên kênh" value={ytChannelName} onChange={e => setYtChannelName(e.target.value)} />
+                     <input className="border border-slate-200 p-2.5 rounded-xl w-1/3 text-xs font-semibold" placeholder="Link kênh" value={ytChannelLink} onChange={e => setYtChannelLink(e.target.value)} />
                      <button onClick={addYtChannel} className="bg-red-600 hover:bg-red-700 text-white px-4 rounded-xl font-bold text-xs">Thêm</button>
                  </div>
                  <table className="w-full text-xs">
