@@ -33,6 +33,8 @@ export default function Home() {
   const [ttChannelName, setTtChannelName] = useState('');
   const [ttChannelLink, setTtChannelLink] = useState('');
 
+  // Webhook State
+  const [webhookUrlInput, setWebhookUrlInput] = useState('');
   // Helper to get current HH:mm
   const getCurrentTime = () => {
     const now = new Date();
@@ -82,6 +84,10 @@ export default function Home() {
 
       const resTt = await fetch('/api/tt-channels');
       setTtChannels(await resTt.json());
+
+      const resWeb = await fetch('/api/webhook-config');
+      const webData = await resWeb.json();
+      if (webData.url) setWebhookUrlInput(webData.url);
     } catch (e) {
       console.error("Lỗi tải dữ liệu", e);
     }
@@ -148,6 +154,11 @@ export default function Home() {
     await fetch('/api/tt-channels', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(newChannels) });
     setTtChannelName(''); setTtChannelLink(''); fetchData();
     showToast('✅ Đã lưu kênh TikTok mới!');
+  };
+
+  const saveWebhook = async () => {
+    await fetch('/api/webhook-config', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ url: webhookUrlInput }) });
+    showToast('🤖 Đã lưu cấu hình Bot Webhook thành công!');
   };
 
   const handleSubmit = async () => {
@@ -871,6 +882,17 @@ export default function Home() {
                       </tr>
                     ))}</tbody>
                 </table>
+              </div>
+              {/* Webhook Configuration Management */}
+              <div className="bg-indigo-950 p-4 rounded-xl border border-indigo-800 text-white">
+                <h3 className="font-bold text-sm text-indigo-400 mb-2 flex items-center gap-1.5">
+                  <span>🤖</span> Cấu Hình Bot Webhook Thông Báo Tự Động
+                </h3>
+                <p className="text-xs text-indigo-200 mb-3">Dán URL Webhook của Telegram, Lark Suite hoặc Zalo Bot vào đây để tự động nhận thông báo báo cáo mới.</p>
+                <div className="flex gap-2">
+                  <input className="border border-indigo-800 bg-indigo-900/90 p-2.5 rounded-xl flex-1 text-xs font-semibold text-white placeholder-indigo-400" placeholder="https://open.larksuite.com/open-apis/bot/v2/hook/..." value={webhookUrlInput} onChange={e => setWebhookUrlInput(e.target.value)} />
+                  <button onClick={saveWebhook} className="bg-indigo-500 hover:bg-indigo-600 text-white px-4 rounded-xl font-extrabold text-xs">Lưu Webhook</button>
+                </div>
               </div>
             </div>
           )}

@@ -78,18 +78,31 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     fs.writeFileSync(targetFile, JSON.stringify(data, null, 2));
 
     // Webhook Notification Trigger (Telegram / Zalo / Lark Bot)
-    const webhookUrl = process.env.NOTIFICATION_WEBHOOK_URL;
+    let webhookUrl = process.env.NOTIFICATION_WEBHOOK_URL;
+    const configPath = path.join(DATA_DIR, 'webhook-config.json');
+    if (fs.existsSync(configPath)) {
+      try {
+        const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+        if (config.url) webhookUrl = config.url;
+      } catch (e) {}
+    }
+
     if (webhookUrl) {
       try {
+        // Format for Telegram vs Lark/Zalo
+        let payload: any = { text: `📢 [ContentFlow CRM] Báo báo công việc mới!\n• Nền tảng: ${newEntry.platform}\n• Giờ: ${newEntry.time}\n• Reach/Views: ${newEntry.reach || 0}\n• Link: ${newEntry.link}\n• Hook: ${newEntry.hook || 'Không có'}` };
+        
+        if (webhookUrl.includes('larksuite.com') || webhookUrl.includes('feishu.cn')) {
+          payload = {
+            msg_type: 'text',
+            content: { text: `📢 [ContentFlow CRM] Báo cáo mới!\n• Nền tảng: ${newEntry.platform}\n• Reach/Views: ${newEntry.reach || 0}\n• Link: ${newEntry.link}` }
+          };
+        }
+
         fetch(webhookUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            msg_type: 'text',
-            content: {
-              text: `📢 [ContentFlow Alert] Báo cáo mới!\nNền tảng: ${newEntry.platform}\nReach: ${newEntry.reach || 0}\nLink: ${newEntry.link}`
-            }
-          })
+          body: JSON.stringify(payload)
         }).catch(err => console.error("Webhook trigger error", err));
       } catch (e) {}
     }
