@@ -2,38 +2,30 @@
   {
     "link": "https://www.facebook.com/share/p/1BjxLTEG1a/",
     "time": "11h",
-    "reach": "",
+    "reach": "408",
     "hook": "",
     "suggestion": "",
     "group": "AI Everyday",
     "id": 1788434928502,
     "platform": "Facebook",
     "isShared": false,
-    "image": null
+    "image": null,
+    "date": "2026-09-03",
+    "videoType": "Shorts"
   },
   {
     "link": "https://www.facebook.com/share/p/1DKjgCNfJv/",
     "time": "9h",
-    "reach": "",
+    "reach": "1583",
     "hook": "",
     "suggestion": "",
     "group": "Flutter Vietnam",
     "id": 1788435460138,
     "platform": "Facebook",
     "isShared": false,
-    "image": null
-  },
-  {
-    "link": "https://www.facebook.com/reel/1381139177419605/",
-    "time": "11h",
-    "reach": "",
-    "hook": "",
-    "suggestion": "",
-    "group": "Acc Kevin",
-    "id": 1788435529732,
-    "platform": "Facebook",
-    "isShared": true,
-    "image": null
+    "image": null,
+    "date": "2026-09-03",
+    "videoType": "Shorts"
   },
   {
     "link": "https://www.facebook.com/groups/1212071995953351/my_pending_content",
@@ -116,6 +108,20 @@
     "id": 1788437800263,
     "platform": "YouTube",
     "isShared": false,
+    "image": null
+  },
+  {
+    "date": "2026-09-03",
+    "link": "https://www.facebook.com/share/p/1EW36DKFYo/",
+    "time": "12:00",
+    "reach": "77",
+    "hook": "",
+    "suggestion": "",
+    "group": "Acc Kevin",
+    "videoType": "Shorts",
+    "id": 1788438005800,
+    "platform": "Facebook",
+    "isShared": true,
     "image": null
   }
 ]
