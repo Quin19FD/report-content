@@ -224,6 +224,53 @@ export default function Home() {
     fetchData();
     showToast('🗑️ Đã xóa báo cáo!');
   };
+  // Clone: nhân bản 1 báo cáo (đổi link/reach sau)
+  const cloneEntry = async (entry: any) => {
+    await fetch('/api/reports', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...entry, id: undefined, date: todayStr, time: getCurrentTime(), reach: '0' })
+    });
+    fetchData();
+    showToast('⧉ Đã nhân bản báo cáo — sửa Reach/Link ngay trong bảng!');
+  };
+
+  // Inline Edit: sửa trực tiếp ô Reach / Hook trong bảng
+  const updateEntryInline = async (id: number, field: string, value: string) => {
+    setEntries(prev => prev.map(e => e.id === id ? { ...e, [field]: value } : e));
+    await fetch('/api/reports', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, [field]: value })
+    });
+  };
+
+  // Bulk Import: dán nhiều link 1 lượt, tự nhận diện nền tảng
+  const [showBulk, setShowBulk] = useState(false);
+  const [bulkText, setBulkText] = useState('');
+  const detectPlatform = (url: string): string => {
+    const u = url.toLowerCase();
+    if (u.includes('youtube.com') || u.includes('youtu.be')) return 'YouTube';
+    if (u.includes('tiktok.com')) return 'TikTok';
+    if (u.includes('facebook.com') || u.includes('fb.watch')) return 'Facebook';
+    return activeTab;
+  };
+  const handleBulkImport = async () => {
+    const links = bulkText.split('\n').map(l => l.trim()).filter(l => l.length > 3);
+    if (links.length === 0) return alert('Dán ít nhất 1 link vào ô!');
+    for (const link of links) {
+      const platform = detectPlatform(link);
+      await fetch('/api/reports', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ date: todayStr, link, platform, time: getCurrentTime(), reach: '0', hook: '', group: '' })
+      });
+    }
+    setBulkText('');
+    setShowBulk(false);
+    fetchData();
+    showToast(`⚡ Đã nhập nhanh ${links.length} báo cáo cùng lúc!`);
+  };
 
   const startEdit = (entry: any) => {
     setForm({ 
@@ -550,6 +597,30 @@ export default function Home() {
               })}
            </div>
 
+           {/* Bulk Import Quick Panel */}
+           <button 
+             type="button" 
+             onClick={() => setShowBulk(!showBulk)} 
+             className={`w-full py-2.5 rounded-xl font-black text-xs transition border-2 border-dashed ${showBulk ? 'bg-amber-50 border-amber-300 text-amber-800' : 'border-slate-300 text-slate-600 hover:border-sky-400 hover:text-sky-600'}`}
+           >
+             ⚡ Nhập Nhanh Nhiều Link Cùng Lúc
+           </button>
+
+           {showBulk && (
+             <div className="bg-amber-50/70 p-4 rounded-xl border border-amber-200 space-y-3">
+               <p className="text-xs font-bold text-amber-800">Dán mỗi link 1 dòng — hệ thống tự nhận diện Facebook / YouTube / TikTok và lưu thành từng báo cáo riêng.</p>
+               <textarea 
+                 className="w-full border border-amber-200 p-3 rounded-xl text-xs font-semibold h-28 bg-white" 
+                 placeholder={"https://facebook.com/...\nhttps://youtube.com/shorts/...\nhttps://tiktok.com/..."} 
+                 value={bulkText} 
+                 onChange={e => setBulkText(e.target.value)} 
+               />
+               <div className="flex gap-2">
+                 <button onClick={handleBulkImport} className="flex-1 bg-amber-600 hover:bg-amber-700 text-white py-2.5 rounded-xl font-black text-xs">Nhập Tất Cả</button>
+                 <button onClick={() => setShowBulk(false)} className="px-4 bg-white border border-amber-200 text-amber-800 py-2.5 rounded-xl font-black text-xs">Đóng</button>
+               </div>
+             </div>
+           )}
            {/* Select Date for Report */}
            <div>
              <label className="block text-xs font-black text-slate-800 uppercase tracking-wide mb-1.5">Ngày Báo Cáo</label>
@@ -779,16 +850,16 @@ export default function Home() {
                    { id: 'YouTube', label: 'YouTube', count: entries.filter(e => e.platform === 'YouTube').length },
                    { id: 'TikTok', label: 'TikTok', count: entries.filter(e => e.platform === 'TikTok').length },
                  ].map(t => (
-                   <button
-                     key={t.id}
-                     type="button"
-                     onClick={() => setFilterPlatform(t.id)}
-                     className={`flex-1 py-1.5 rounded-lg transition ${filterPlatform === t.id ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600'}`}
-                   >
-                     {t.label} ({t.count})
-                   </button>
-                 ))}
-               </div>
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => setFilterPlatform(t.id)}
+                    className={`flex-1 py-1.5 rounded-lg transition ${filterPlatform === t.id ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600'}`}
+                  >
+                    {t.label} ({t.count})
+                  </button>
+                ))}
+              </div>
 
                <div className="max-h-[460px] overflow-y-auto pr-1">
                  <table className="w-full text-left text-sm">
@@ -827,11 +898,12 @@ export default function Home() {
                                 Mở ↗
                               </a>
                             </td>
-                            <td className="py-3 px-1 font-black text-slate-900 text-xs">{e.reach ? parseInt(e.reach).toLocaleString() : '0'}</td>
+                            <td className="py-2 px-1"><input defaultValue={e.reach || ''} onBlur={ev => { if (ev.target.value !== (e.reach || '')) updateEntryInline(e.id, 'reach', ev.target.value); }} className="w-16 border border-transparent hover:border-slate-200 focus:border-sky-400 p-1 rounded-lg font-black text-slate-900 text-xs bg-transparent" /></td>
                             <td className="py-3 px-1">{e.isShared ? <span className="text-emerald-700 font-extrabold text-xs">✓</span> : <span className="text-slate-300 font-bold text-xs">✕</span>}</td>
-                            <td className="py-3 px-1 hidden md:table-cell max-w-[120px] truncate text-slate-600 font-medium text-xs">{e.hook || '--'}</td>
+                            <td className="py-2 px-1 hidden md:table-cell"><input defaultValue={e.hook || ''} onBlur={ev => { if (ev.target.value !== (e.hook || '')) updateEntryInline(e.id, 'hook', ev.target.value); }} placeholder="Thêm hook..." className="w-full max-w-[150px] border border-transparent hover:border-slate-200 focus:border-sky-400 p-1 rounded-lg text-slate-600 font-medium text-xs bg-transparent" /></td>
                             <td className="py-3 px-1 text-right">
                               <div className="flex justify-end gap-1">
+                                <button onClick={() => cloneEntry(e)} title="Nhân bản báo cáo" className="bg-sky-50 hover:bg-sky-100 text-sky-700 px-2 py-1 rounded font-extrabold text-xs">⧉</button>
                                 <button onClick={() => startEdit(e)} className="bg-amber-50 hover:bg-amber-100 text-amber-700 px-2 py-1 rounded font-extrabold text-xs">Sửa</button>
                                 <button onClick={() => handleDelete(e.id)} className="bg-rose-50 hover:bg-rose-100 text-rose-700 px-2 py-1 rounded font-extrabold text-xs">Xóa</button>
                               </div>
