@@ -63,8 +63,8 @@ export default function Home() {
     const doc = new jsPDF();
     doc.text(`Bao cao: ${new Date().toLocaleDateString()}`, 14, 15);
     autoTable(doc, {
-      head: [["Nen tang", "Link", "Reach", "Shared", "Hook"]],
-      body: entries.map(e => [e.platform, e.link, e.reach, e.isShared ? 'Yes' : 'No', e.hook]),
+      head: [["Nen tang", "Gio", "Link", "Reach", "Shared", "Hook"]],
+      body: entries.map(e => [e.platform, e.time, e.link, e.reach, e.isShared ? 'Yes' : 'No', e.hook]),
       startY: 25,
     });
     doc.save("Report_CRM.pdf");
@@ -128,9 +128,10 @@ export default function Home() {
             <h2 className="font-bold text-xl mb-4">Danh sách báo cáo</h2>
             <div className="overflow-x-auto">
                 <table className="w-full text-left text-sm">
-                    <thead><tr className="border-b text-slate-400"><th>Nền</th><th>Nhóm</th><th>Link</th><th>Reach</th><th>Shared</th><th>Hook</th><th>Action</th></tr></thead>
+                    <thead><tr className="border-b text-slate-400"><th>Nền</th><th>Giờ</th><th>Nhóm</th><th>Link</th><th>Reach</th><th>Shared</th><th>Hook</th><th>Action</th></tr></thead>
                     <tbody>{entries.map(e => <tr key={e.id} className="border-b">
                         <td className="py-4 font-bold">{e.platform}</td>
+                        <td className="py-4">{e.time || 'N/A'}</td>
                         <td className="py-4">{e.group || 'N/A'}</td>
                         <td className="py-4"><a href={e.link.startsWith('http') ? e.link : `https://${e.link}`} target="_blank" rel="noopener noreferrer" className="text-sky-600 underline">Link</a></td>
                         <td className="py-4">{e.reach}</td>
