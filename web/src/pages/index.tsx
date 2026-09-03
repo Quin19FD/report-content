@@ -19,7 +19,11 @@ export default function Home() {
   const [ytChannels, setYtChannels] = useState<{name: string, link: string}[]>([]);
   const [ytChannelName, setYtChannelName] = useState('');
   const [ytChannelLink, setYtChannelLink] = useState('');
-  
+
+  // TikTok Channels state
+  const [ttChannels, setTtChannels] = useState<{name: string, link: string}[]>([]);
+  const [ttChannelName, setTtChannelName] = useState('');
+  const [ttChannelLink, setTtChannelLink] = useState('');
   // Helper to get current HH:mm
   const getCurrentTime = () => {
     const now = new Date();
@@ -60,6 +64,9 @@ export default function Home() {
 
       const resYt = await fetch('/api/yt-channels');
       setYtChannels(await resYt.json());
+
+      const resTt = await fetch('/api/tt-channels');
+      setTtChannels(await resTt.json());
     } catch (e) {
       console.error("Lỗi tải dữ liệu", e);
     }
@@ -129,6 +136,13 @@ export default function Home() {
     showToast('✅ Đã lưu kênh YouTube mới!');
   };
 
+  const addTtChannel = async () => {
+    if(!ttChannelName || !ttChannelLink) return alert("Nhập đủ tên và link kênh TikTok!");
+    const newChannels = [...ttChannels, {name: ttChannelName, link: ttChannelLink}];
+    await fetch('/api/tt-channels', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(newChannels) });
+    setTtChannelName(''); setTtChannelLink(''); fetchData();
+    showToast('✅ Đã lưu kênh TikTok mới!');
+  };
   const handleSubmit = async () => {
     if (!form.link) return alert("Vui lòng dán Link bài/video!");
     
@@ -495,9 +509,23 @@ export default function Home() {
                </div>
              </div>
            )}
+          {/* TikTok Specific Controls */}
+          {activeTab === 'TikTok' && (
+            <div>
+              <label className="block text-xs font-black text-slate-800 uppercase tracking-wide mb-1.5">Kênh TikTok</label>
+              <select 
+                className="w-full border border-slate-200 p-3 rounded-xl text-sm font-bold text-slate-900 bg-white" 
+                value={form.group} 
+                onChange={e => setForm({...form, group: e.target.value})}
+              >
+                <option value="">-- Chọn Kênh TikTok --</option>
+                {ttChannels.map((c, i) => <option key={i} value={c.name}>{c.name}</option>)}
+              </select>
+            </div>
+          )}
 
-           {/* Time & Reach with Presets */}
-           <div className="grid grid-cols-2 gap-3">
+          {/* Time & Reach with Presets */}
+          <div className="grid grid-cols-2 gap-3">
                <div>
                  <div className="flex justify-between items-center mb-1.5">
                    <label className="block text-xs font-black text-slate-800 uppercase tracking-wide">Giờ đăng</label>
@@ -713,9 +741,31 @@ export default function Home() {
                      ))}</tbody>
                  </table>
                </div>
-             </div>
-           )}
 
+              {/* TikTok Channels Management */}
+              <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 text-white">
+                <h3 className="font-bold text-sm text-sky-400 mb-3 flex items-center gap-1.5">
+                  <span>🎵</span> Quản Lý Kênh TikTok
+                </h3>
+                <div className="flex gap-2 mb-3">
+                    <input className="border border-slate-800 bg-slate-900 p-2.5 rounded-xl w-1/3 text-xs font-semibold text-white placeholder-slate-500" placeholder="Tên kênh TikTok" value={ttChannelName} onChange={e => setTtChannelName(e.target.value)} />
+                    <input className="border border-slate-800 bg-slate-900 p-2.5 rounded-xl w-1/3 text-xs font-semibold text-white placeholder-slate-500" placeholder="Link kênh TikTok" value={ttChannelLink} onChange={e => setTtChannelLink(e.target.value)} />
+                    <button onClick={addTtChannel} className="bg-sky-500 hover:bg-sky-600 text-slate-950 px-4 rounded-xl font-black text-xs">Thêm</button>
+                </div>
+                <table className="w-full text-xs">
+                    <thead><tr className="border-b border-slate-800 text-slate-400 text-left"><th className="py-1.5">Kênh TikTok</th><th className="text-right">Link</th></tr></thead>
+                    <tbody>{ttChannels.map((c, i) => (
+                      <tr key={i} className="border-b border-slate-900">
+                        <td className="py-2 font-bold text-slate-200">{c.name}</td>
+                        <td className="text-right">
+                          <a href={c.link.startsWith('http') ? c.link : `https://${c.link}`} target="_blank" rel="noopener noreferrer" className="text-sky-400 font-bold underline">Xem ↗</a>
+                        </td>
+                      </tr>
+                    ))}</tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </Layout>
