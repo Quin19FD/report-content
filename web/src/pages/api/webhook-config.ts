@@ -3,14 +3,27 @@ import path from 'path';
 import type { NextApiRequest, NextApiResponse } from 'next';
 
 const CONFIG_FILE = path.join(process.cwd(), 'data', 'webhook-config.json');
+const STATE_FILE = path.join(process.cwd(), 'data', 'bot-state.json');
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
   if (!fs.existsSync(path.dirname(CONFIG_FILE))) fs.mkdirSync(path.dirname(CONFIG_FILE), { recursive: true });
 
   if (req.method === 'GET') {
-    if (!fs.existsSync(CONFIG_FILE)) return res.status(200).json({ url: process.env.NOTIFICATION_WEBHOOK_URL || '' });
-    const data = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf-8'));
-    return res.status(200).json(data);
+    let remainingToday = 2;
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      if (fs.existsSync(STATE_FILE)) {
+        const parsed = JSON.parse(fs.readFileSync(STATE_FILE, 'utf-8'));
+        if (parsed.date === today) remainingToday = Math.max(0, 2 - parsed.count);
+      }
+    } catch (e) {}
+    let url = process.env.NOTIFICATION_WEBHOOK_URL || '';
+    if (fs.existsSync(CONFIG_FILE)) {
+      try {
+        url = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf-8')).url || url;
+      } catch (e) {}
+    }
+    return res.status(200).json({ url, remainingToday });
   }
 
   if (req.method === 'POST') {

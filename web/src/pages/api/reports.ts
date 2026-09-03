@@ -77,37 +77,68 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     data.push(newEntry);
     fs.writeFileSync(targetFile, JSON.stringify(data, null, 2));
 
-    // Webhook Notification Trigger (Telegram / Zalo / Lark Bot)
-    let webhookUrl = process.env.NOTIFICATION_WEBHOOK_URL;
-    const configPath = path.join(DATA_DIR, 'webhook-config.json');
-    if (fs.existsSync(configPath)) {
-      try {
-        const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
-        if (config.url) webhookUrl = config.url;
-      } catch (e) {}
-    }
+    // Bot Notification: Chỉ gửi khi user xác nhận + tối đa 2 lượt/ngày
+    let botSent = false;
+    let botReason = '';
+    if (req.body.notifyBot) {
+      let webhookUrl = process.env.NOTIFICATION_WEBHOOK_URL;
+      const configPath = path.join(DATA_DIR, 'webhook-config.json');
+      if (fs.existsSync(configPath)) {
+        try {
+          const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+          if (config.url) webhookUrl = config.url;
+        } catch (e) {}
+      }
 
-    if (webhookUrl) {
-      try {
-        // Format for Telegram vs Lark/Zalo
-        let payload: any = { text: `📢 [ContentFlow CRM] Báo báo công việc mới!\n• Nền tảng: ${newEntry.platform}\n• Giờ: ${newEntry.time}\n• Reach/Views: ${newEntry.reach || 0}\n• Link: ${newEntry.link}\n• Hook: ${newEntry.hook || 'Không có'}` };
-        
-        if (webhookUrl.includes('larksuite.com') || webhookUrl.includes('feishu.cn')) {
-          payload = {
-            msg_type: 'text',
-            content: { text: `📢 [ContentFlow CRM] Báo cáo mới!\n• Nền tảng: ${newEntry.platform}\n• Reach/Views: ${newEntry.reach || 0}\n• Link: ${newEntry.link}` }
-          };
+      if (!webhookUrl) {
+        botReason = 'Chưa cấu hình Webhook Bot';
+      } else {
+        // Daily quota: max 2 bot notifications per day
+        const statePath = path.join(DATA_DIR, 'bot-state.json');
+        const today = new Date().toISOString().split('T')[0];
+        let state: { date: string; count: number } = { date: today, count: 0 };
+        try {
+          if (fs.existsSync(statePath)) {
+            const parsed = JSON.parse(fs.readFileSync(statePath, 'utf-8'));
+            if (parsed.date === today) state = parsed;
+          }
+        } catch (e) {}
+
+        if (state.count >= 2) {
+          botReason = 'Đã hết 2 lượt gửi Bot hôm nay';
+        } else {
+          state.count += 1;
+          fs.writeFileSync(statePath, JSON.stringify(state, null, 2));
+          botSent = true;
+
+          try {
+            let payload: any = { text: `📢 [ContentFlow CRM] BÁO CÁO NGÀY ${newEntry.date} (Lượt ${state.count}/2)\n• Nền tảng: ${newEntry.platform}\n• Giờ: ${newEntry.time}\n• Reach/Views: ${newEntry.reach || 0}\n• Link: ${newEntry.link}\n• Hook: ${newEntry.hook || 'Không có'}` };
+
+            if (webhookUrl.includes('larksuite.com') || webhookUrl.includes('feishu.cn')) {
+              payload = {
+                msg_type: 'text',
+                content: { text: `📢 [ContentFlow CRM] BÁO CÁO NGÀY ${newEntry.date} (Lượt ${state.count}/2)\n• Nền tảng: ${newEntry.platform}\n• Reach/Views: ${newEntry.reach || 0}\n• Link: ${newEntry.link}` }
+              };
+            }
+
+            fetch(webhookUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload)
+            }).catch(err => console.error("Webhook trigger error", err));
+          } catch (e) {}
         }
-
-        fetch(webhookUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        }).catch(err => console.error("Webhook trigger error", err));
-      } catch (e) {}
+      }
     }
 
-    return res.status(200).json({ success: true });
+    return res.status(200).json({ success: true, botSent, botRemainingToday: 2 - (() => {
+      try {
+        const statePath = path.join(DATA_DIR, 'bot-state.json');
+        const today = new Date().toISOString().split('T')[0];
+        const parsed = JSON.parse(fs.readFileSync(statePath, 'utf-8'));
+        return parsed.date === today ? parsed.count : 0;
+      } catch (e) { return 0; }
+    })(), botReason });
   }
 
   if (req.method === 'DELETE') {

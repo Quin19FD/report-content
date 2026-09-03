@@ -35,6 +35,8 @@ export default function Home() {
 
   // Webhook State
   const [webhookUrlInput, setWebhookUrlInput] = useState('');
+  const [notifyBot, setNotifyBot] = useState(false);
+  const [botRemaining, setBotRemaining] = useState(2);
   // Helper to get current HH:mm
   const getCurrentTime = () => {
     const now = new Date();
@@ -88,6 +90,7 @@ export default function Home() {
       const resWeb = await fetch('/api/webhook-config');
       const webData = await resWeb.json();
       if (webData.url) setWebhookUrlInput(webData.url);
+      if (typeof webData.remainingToday === 'number') setBotRemaining(webData.remainingToday);
     } catch (e) {
       console.error("Lỗi tải dữ liệu", e);
     }
@@ -168,7 +171,7 @@ export default function Home() {
     const method = editingId ? 'PUT' : 'POST';
     const groupValue = activeTab === 'Facebook' ? form.group : (activeTab === 'YouTube' ? `${form.videoType}${form.group ? ' - ' + form.group : ''}` : form.group);
 
-    await fetch('/api/reports', {
+    const res = await fetch('/api/reports', {
       method,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
@@ -179,9 +182,23 @@ export default function Home() {
         platform: activeTab, 
         isShared, 
         image,
-        group: groupValue
+        group: groupValue,
+        notifyBot
       })
     });
+
+    // Bot feedback
+    if (notifyBot && !editingId) {
+      try {
+        const result = await res.json();
+        if (result.botSent) {
+          showToast(`🤖 Đã gửi Bot! (Còn ${result.botRemainingToday}/2 lượt hôm nay)`);
+        } else {
+          showToast(`⚠️ Bot chưa gửi: ${result.botReason || 'Lý do không rõ'}`);
+        }
+      } catch (e) {}
+    }
+    setNotifyBot(false);
 
     setForm({ 
       date: todayStr,
@@ -695,6 +712,21 @@ export default function Home() {
              </button>
            </div>
 
+          {/* Bot Notification Toggle (max 2/day) */}
+          <div className={`flex items-center justify-between p-3.5 rounded-xl border ${botRemaining > 0 ? 'bg-indigo-50 border-indigo-200' : 'bg-slate-50 border-slate-200 opacity-60'}`}>
+            <div>
+              <span className="text-sm font-extrabold text-slate-800">🤖 Gửi Bot thông báo nhóm?</span>
+              <p className="text-[11px] text-slate-500 font-semibold mt-0.5">Còn {botRemaining}/2 lượt gửi Bot hôm nay</p>
+            </div>
+            <button 
+              type="button" 
+              disabled={botRemaining <= 0}
+              onClick={() => setNotifyBot(!notifyBot)} 
+              className={`px-4 py-2 rounded-xl text-xs font-black transition ${notifyBot ? 'bg-indigo-600 text-white' : botRemaining > 0 ? 'bg-indigo-200 text-indigo-900 hover:bg-indigo-300' : 'bg-slate-200 text-slate-400 cursor-not-allowed'}`}
+            >
+              {notifyBot ? '🔔 SẼ GỬI BOT' : '🔕 KHÔNG GỬI'}
+            </button>
+          </div>
            <button 
              type="button"
              onClick={handleSubmit} 
