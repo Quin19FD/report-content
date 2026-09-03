@@ -79,8 +79,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 min-w-0 p-8 overflow-y-auto">
-        <div className="max-w-7xl mx-auto">
+      {/* Main Content Area - Full Widescreen Expansion */}
+      <main className="flex-1 min-w-0 p-6 lg:p-8 overflow-y-auto">
+        <div className="max-w-[1850px] w-full mx-auto">
           {children}
         </div>
       </main>

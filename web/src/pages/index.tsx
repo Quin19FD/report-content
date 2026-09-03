@@ -543,13 +543,14 @@ export default function Home() {
                  <table className="w-full text-left text-sm">
                      <thead className="sticky top-0 bg-white shadow-sm z-10">
                        <tr className="border-b border-slate-200 text-slate-500 font-black uppercase text-xs">
-                         <th className="py-2.5">Nền</th>
-                         <th>Giờ</th>
-                         <th>Nhóm/Loại</th>
-                         <th>Link</th>
-                         <th>Reach</th>
-                         <th>Share</th>
-                         <th className="text-right">Hành động</th>
+                         <th className="py-2.5 px-1">Nền</th>
+                         <th className="px-1">Giờ</th>
+                         <th className="px-1">Nhóm/Loại</th>
+                         <th className="px-1">Link</th>
+                         <th className="px-1">Reach</th>
+                         <th className="px-1">Share</th>
+                         <th className="px-1 hidden md:table-cell">Câu Hook</th>
+                         <th className="text-right px-1">Hành động</th>
                        </tr>
                      </thead>
                      <tbody>
@@ -561,27 +562,27 @@ export default function Home() {
                          </tr>
                        ) : filteredEntries.map(e => (
                          <tr key={e.id} className="border-b border-slate-100 hover:bg-slate-50/80 transition">
-                             <td className="py-3 font-bold">
+                             <td className="py-3 px-1 font-bold">
                                <span className={`px-2.5 py-1 rounded-md text-xs font-extrabold ${e.platform === 'YouTube' ? 'bg-red-100 text-red-700' : e.platform === 'Facebook' ? 'bg-sky-100 text-sky-700' : 'bg-slate-950 text-white'}`}>
                                  {e.platform}
                                </span>
                              </td>
-                             <td className="py-3 font-bold text-slate-800 text-sm">{e.time || '--:--'}</td>
-                             <td className="py-3 font-semibold text-slate-700 truncate max-w-[100px] text-xs">{e.group || '--'}</td>
-                             <td className="py-3">
+                             <td className="py-3 px-1 font-bold text-slate-800 text-sm">{e.time || '--:--'}</td>
+                             <td className="py-3 px-1 font-semibold text-slate-700 truncate max-w-[120px] text-xs">{e.group || '--'}</td>
+                             <td className="py-3 px-1">
                                <a href={e.link.startsWith('http') ? e.link : `https://${e.link}`} target="_blank" rel="noopener noreferrer" className="text-sky-600 font-extrabold hover:underline bg-sky-50 px-2.5 py-1 rounded-lg text-xs">
                                  Mở ↗
                                </a>
                              </td>
-                             <td className="py-3 font-black text-slate-900 text-sm">{e.reach ? parseInt(e.reach).toLocaleString() : '0'}</td>
-                             <td className="py-3">{e.isShared ? <span className="text-emerald-700 font-extrabold text-sm">✓</span> : <span className="text-slate-300 font-bold text-sm">✕</span>}</td>
-                             <td className="py-3 text-right">
+                             <td className="py-3 px-1 font-black text-slate-900 text-sm">{e.reach ? parseInt(e.reach).toLocaleString() : '0'}</td>
+                             <td className="py-3 px-1">{e.isShared ? <span className="text-emerald-700 font-extrabold text-sm">✓</span> : <span className="text-slate-300 font-bold text-sm">✕</span>}</td>
+                             <td className="py-3 px-1 hidden md:table-cell max-w-[160px] truncate text-slate-600 font-medium text-xs">{e.hook || '--'}</td>
+                             <td className="py-3 px-1 text-right">
                                <div className="flex justify-end gap-1.5">
                                  <button onClick={() => startEdit(e)} className="bg-amber-50 hover:bg-amber-100 text-amber-700 px-2.5 py-1 rounded-lg font-extrabold text-xs">Sửa</button>
                                  <button onClick={() => handleDelete(e.id)} className="bg-rose-50 hover:bg-rose-100 text-rose-700 px-2.5 py-1 rounded-lg font-extrabold text-xs">Xóa</button>
                                </div>
                              </td>
-                         </tr>
                        ))}
                      </tbody>
                  </table>
