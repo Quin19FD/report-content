@@ -76,6 +76,24 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     }
     data.push(newEntry);
     fs.writeFileSync(targetFile, JSON.stringify(data, null, 2));
+
+    // Webhook Notification Trigger (Telegram / Zalo / Lark Bot)
+    const webhookUrl = process.env.NOTIFICATION_WEBHOOK_URL;
+    if (webhookUrl) {
+      try {
+        fetch(webhookUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            msg_type: 'text',
+            content: {
+              text: `📢 [ContentFlow Alert] Báo cáo mới!\nNền tảng: ${newEntry.platform}\nReach: ${newEntry.reach || 0}\nLink: ${newEntry.link}`
+            }
+          })
+        }).catch(err => console.error("Webhook trigger error", err));
+      } catch (e) {}
+    }
+
     return res.status(200).json({ success: true });
   }
 

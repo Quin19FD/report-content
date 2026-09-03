@@ -626,6 +626,39 @@ export default function Home() {
                </div>
            </div>
 
+           {/* Image / Thumbnail Attachment Upload */}
+           <div>
+             <label className="block text-xs font-black text-slate-800 uppercase tracking-wide mb-1.5">Ảnh Xem Trước / Thumbnail</label>
+             <div className="flex items-center gap-3">
+               <input 
+                 type="file" 
+                 accept="image/*" 
+                 ref={fileInputRef}
+                 className="hidden" 
+                 onChange={e => {
+                   const file = e.target.files?.[0];
+                   if (file) {
+                     const reader = new FileReader();
+                     reader.onloadend = () => setImage(reader.result as string);
+                     reader.readAsDataURL(file);
+                   }
+                 }} 
+               />
+               <button 
+                 type="button" 
+                 onClick={() => fileInputRef.current?.click()}
+                 className="bg-slate-100 hover:bg-slate-200 text-slate-800 px-4 py-2.5 rounded-xl font-bold text-xs border border-slate-200 flex items-center gap-1.5"
+               >
+                 <span>📷</span> {image ? 'Đã Tải Ảnh' : 'Tải Ảnh Thumbnail'}
+               </button>
+               {image && (
+                 <div className="flex items-center gap-2">
+                   <img src={image} alt="Thumbnail preview" className="w-9 h-9 object-cover rounded-lg border border-slate-200 shadow-sm" />
+                   <button type="button" onClick={() => setImage(null)} className="text-xs text-rose-600 font-bold hover:underline">Xóa</button>
+                 </div>
+               )}
+             </div>
+           </div>
            {/* Hook & Suggestion */}
            <div className="grid grid-cols-2 gap-3">
              <div>

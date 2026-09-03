@@ -61,6 +61,18 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <span className="text-lg">📅</span>
               <span>Kế Hoạch Tháng (Grid)</span>
             </Link>
+
+            <Link 
+              href="/analytics" 
+              className={`flex items-center gap-3 px-3.5 py-3 rounded-xl font-semibold text-sm transition-all duration-200 ${
+                router.pathname === '/analytics' 
+                  ? 'bg-gradient-to-r from-sky-600 to-indigo-600 text-white shadow-lg shadow-sky-600/25' 
+                  : 'hover:bg-slate-900 text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <span className="text-lg">📈</span>
+              <span>Phân Tích & Biểu Đồ</span>
+            </Link>
           </nav>
         </div>
 
