@@ -37,7 +37,11 @@ export default function Home() {
   const [webhookUrlInput, setWebhookUrlInput] = useState('');
   const [notifyBot, setNotifyBot] = useState(false);
   const [botRemaining, setBotRemaining] = useState(2);
-  // Helper to get current HH:mm
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') setIsAdmin(localStorage.getItem('cf_auth') === 'admin');
+  }, []);
   const getCurrentTime = () => {
     const now = new Date();
     return `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
@@ -385,7 +389,7 @@ export default function Home() {
         e.time || '--:--',
         e.group || '--',
         e.link || '',
-        e.reach ? parseInt(e.reach).toLocaleString() : '0',
+        (e.reach ? parseInt(e.reach).toLocaleString() : '0') + ((parseInt(e.reach) || 0) >= 10000 ? ' (VIRAL)' : ''),
         e.isShared ? '✓ Có' : '✕ Chưa',
         e.hook || '--'
       ]);
@@ -812,31 +816,30 @@ export default function Home() {
            
            {/* Right Panel Main Tabs */}
            <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-             <div className="flex gap-2">
-               <button 
-                 type="button"
-                 onClick={() => setRightTab('REPORTS')} 
-                 className={`px-4 py-2.5 rounded-xl font-black text-xs transition ${rightTab === 'REPORTS' ? 'bg-slate-900 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:text-slate-900'}`}
-               >
-                 📊 Báo Cáo ({filteredEntries.length})
-               </button>
-               <button 
-                 type="button"
-                 onClick={() => setRightTab('MANAGEMENT')} 
-                 className={`px-4 py-2.5 rounded-xl font-black text-xs transition ${rightTab === 'MANAGEMENT' ? 'bg-slate-900 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:text-slate-900'}`}
-               >
-                 📋 Quản Lý Nhóm & Kênh
-               </button>
-             </div>
-
-             {rightTab === 'REPORTS' && (
-               <input 
-                 className="border border-slate-200 px-3.5 py-2 rounded-xl text-xs font-bold w-44 focus:ring-2 focus:ring-sky-500" 
-                 placeholder="🔍 Tìm kiếm..." 
-                 value={searchQuery}
-                 onChange={e => setSearchQuery(e.target.value)}
-               />
-             )}
+              <button 
+                type="button"
+                onClick={() => setRightTab('REPORTS')} 
+                className={`px-4 py-2.5 rounded-xl font-black text-xs transition ${rightTab === 'REPORTS' ? 'bg-slate-900 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:text-slate-900'}`}
+              >
+                📊 Báo Cáo ({filteredEntries.length})
+              </button>
+              {isAdmin && (
+                <button 
+                  type="button"
+                  onClick={() => setRightTab('MANAGEMENT')} 
+                  className={`px-4 py-2.5 rounded-xl font-black text-xs transition ${rightTab === 'MANAGEMENT' ? 'bg-slate-900 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:text-slate-900'}`}
+                >
+                  📋 Quản Lý Nhóm & Kênh
+                </button>
+              )}
+            {rightTab === 'REPORTS' && (
+              <input 
+                className="border border-slate-200 px-3.5 py-2 rounded-xl text-xs font-bold w-44 focus:ring-2 focus:ring-sky-500" 
+                placeholder="🔍 Tìm kiếm..." 
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+              />
+            )}
            </div>
 
            {/* RIGHT TAB 1: REPORTS LIST */}
@@ -898,14 +901,14 @@ export default function Home() {
                                 Mở ↗
                               </a>
                             </td>
-                            <td className="py-2 px-1"><input defaultValue={e.reach || ''} onBlur={ev => { if (ev.target.value !== (e.reach || '')) updateEntryInline(e.id, 'reach', ev.target.value); }} className="w-16 border border-transparent hover:border-slate-200 focus:border-sky-400 p-1 rounded-lg font-black text-slate-900 text-xs bg-transparent" /></td>
+                            <td className="py-2 px-1"><div className="flex items-center gap-1"><input defaultValue={e.reach || ''} onBlur={ev => { if (ev.target.value !== (e.reach || '')) updateEntryInline(e.id, 'reach', ev.target.value); }} className="w-16 border border-transparent hover:border-slate-200 focus:border-sky-400 p-1 rounded-lg font-black text-slate-900 text-xs bg-transparent" />{(parseInt(e.reach) || 0) >= 10000 && <span title="Viral ≥ 10k" className="text-[11px]">🔥</span>}</div></td>
                             <td className="py-3 px-1">{e.isShared ? <span className="text-emerald-700 font-extrabold text-xs">✓</span> : <span className="text-slate-300 font-bold text-xs">✕</span>}</td>
                             <td className="py-2 px-1 hidden md:table-cell"><input defaultValue={e.hook || ''} onBlur={ev => { if (ev.target.value !== (e.hook || '')) updateEntryInline(e.id, 'hook', ev.target.value); }} placeholder="Thêm hook..." className="w-full max-w-[150px] border border-transparent hover:border-slate-200 focus:border-sky-400 p-1 rounded-lg text-slate-600 font-medium text-xs bg-transparent" /></td>
                             <td className="py-3 px-1 text-right">
                               <div className="flex justify-end gap-1">
                                 <button onClick={() => cloneEntry(e)} title="Nhân bản báo cáo" className="bg-sky-50 hover:bg-sky-100 text-sky-700 px-2 py-1 rounded font-extrabold text-xs">⧉</button>
                                 <button onClick={() => startEdit(e)} className="bg-amber-50 hover:bg-amber-100 text-amber-700 px-2 py-1 rounded font-extrabold text-xs">Sửa</button>
-                                <button onClick={() => handleDelete(e.id)} className="bg-rose-50 hover:bg-rose-100 text-rose-700 px-2 py-1 rounded font-extrabold text-xs">Xóa</button>
+                                {isAdmin && <button onClick={() => handleDelete(e.id)} className="bg-rose-50 hover:bg-rose-100 text-rose-700 px-2 py-1 rounded font-extrabold text-xs">Xóa</button>}
                               </div>
                             </td>
                         </tr>
@@ -915,7 +918,6 @@ export default function Home() {
                </div>
              </div>
            )}
-
            {/* RIGHT TAB 2: MANAGEMENT PANELS */}
            {rightTab === 'MANAGEMENT' && (
              <div className="space-y-5 max-h-[460px] overflow-y-auto pr-1">

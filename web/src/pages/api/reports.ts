@@ -145,6 +145,26 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
               tt.forEach(e => lines.push(`• ${e.time || '--:--'} | Views ${(parseInt(e.reach) || 0).toLocaleString('vi-VN')} | ${e.group || '--'} | ${e.hook || e.link}`));
             }
 
+            // Đính kèm cảnh báo Kế Hoạch sắp đến hạn (≤3 ngày, tiến độ <50%)
+            try {
+              const plansPath = path.join(DATA_DIR, 'plans.json');
+              if (fs.existsSync(plansPath)) {
+                const plans: any[] = JSON.parse(fs.readFileSync(plansPath, 'utf-8'));
+                const urgentPlan = plans.filter(p => {
+                  if (!p.deadline || p.status === 'Done') return false;
+                  const daysLeft = Math.ceil((new Date(p.deadline + 'T23:59:59').getTime() - Date.now()) / 86400000);
+                  return daysLeft <= 3 && (parseInt(p.progress) || 0) < 50;
+                });
+                if (urgentPlan.length > 0) {
+                  lines.push(`━━━ 🚨 Kế Hoạch Sắp Đến Hạn ━━━`);
+                  urgentPlan.forEach(p => {
+                    const daysLeft = Math.ceil((new Date(p.deadline + 'T23:59:59').getTime() - Date.now()) / 86400000);
+                    lines.push(`• ${p.task} — hạn ${p.deadline} (còn ${daysLeft} ngày, tiến độ ${p.progress}%)`);
+                  });
+                }
+              }
+            } catch (e) {}
+
             const msgText = lines.join('\n');
 
             let payload: any = { text: msgText };

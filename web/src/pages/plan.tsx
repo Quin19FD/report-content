@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import Layout from '../components/Layout';
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
 
 interface PlanRow {
   id: number;
@@ -155,7 +157,72 @@ export default function Plan() {
     showToast("📊 Đã xuất file Excel (.csv) thành công!");
   };
 
-  // Calculations
+  // Deadline warning: hạn ≤ 3 ngày tới, chưa xong, tiến độ < 50%
+  const daysUntil = (deadline: string) => {
+    if (!deadline) return Infinity;
+    const diff = new Date(deadline + 'T23:59:59').getTime() - Date.now();
+    return Math.ceil(diff / 86400000);
+  };
+  const isUrgent = (r: PlanRow) => r.status !== 'Done' && daysUntil(r.deadline) <= 3 && (parseInt(r.progress) || 0) < 50;
+  const urgentRows = rows.filter(isUrgent);
+
+  const exportToPDF = async () => {
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+    try {
+      const fontUrl = 'https://fonts.gstatic.com/s/roboto/v30/KFOmCnqEu92Fr1Me5WZLCzYlKw.ttf';
+      const res = await fetch(fontUrl);
+      const buffer = await res.arrayBuffer();
+      const base64 = btoa(new Uint8Array(buffer).reduce((data, byte) => data + String.fromCharCode(byte), ''));
+      doc.addFileToVFS("Roboto-Regular.ttf", base64);
+      doc.addFont("Roboto-Regular.ttf", "Roboto", "normal");
+      doc.setFont("Roboto");
+    } catch (err) { console.warn("Fallback font", err); }
+
+    doc.setFillColor(15, 23, 42);
+    doc.rect(0, 0, 297, 30, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(15);
+    doc.text(`CONTENTFLOW CRM - KẾ HOẠCH CHIẾN LƯỢC THÁNG ${selectedMonth}/${selectedYear}`, 14, 13);
+    doc.setFontSize(9);
+    doc.setTextColor(148, 163, 184);
+    doc.text(`Tổng: ${rows.length} mục tiêu | Hoàn thành: ${completedTasks}/${rows.length} | Tiến độ TB: ${avgProgress}% | Target Reach: ${totalTargetReach.toLocaleString()}`, 14, 22);
+
+    const tableData = rows.map((r, i) => [
+      (i + 1).toString(),
+      r.category,
+      (isUrgent(r) ? '[CẢNH BÁO] ' : '') + (r.task || '--'),
+      (parseInt(r.targetReach) || 0).toLocaleString(),
+      `${r.progress}%`,
+      r.status,
+      r.deadline || '--',
+      r.note || '--'
+    ]);
+
+    autoTable(doc, {
+      head: [["STT", "Hạng Mục", "Nhiệm Vụ / Cột Mốc", "Target Reach", "Tiến Độ", "Trạng Thái", "Deadline", "Ghi Chú"]],
+      body: tableData,
+      startY: 36,
+      theme: 'grid',
+      styles: { font: 'Roboto', fontSize: 8.5, cellPadding: 3.5, valign: 'middle', overflow: 'linebreak', lineColor: [226, 232, 240], lineWidth: 0.2 },
+      headStyles: { fillColor: [30, 41, 59], textColor: [255, 255, 255], fontStyle: 'normal', halign: 'center', fontSize: 9 },
+      columnStyles: { 0: { cellWidth: 10, halign: 'center' }, 3: { halign: 'right' }, 4: { halign: 'center' }, 5: { halign: 'center' }, 6: { halign: 'center' } },
+      alternateRowStyles: { fillColor: [248, 250, 252] },
+      didParseCell: (data) => {
+        if (data.section === 'body' && String(data.cell.raw).startsWith('[CẢNH BÁO]')) {
+          data.cell.styles.textColor = [185, 28, 28];
+        }
+      },
+      didDrawPage: (data) => {
+        doc.setFontSize(8);
+        doc.setTextColor(148, 163, 184);
+        doc.text(`ContentFlow CRM • Kế hoạch tháng ${selectedMonth}/${selectedYear}  |  Trang ${data.pageNumber}`, 14, 202);
+      }
+    });
+
+    doc.save(`Ke_Hoach_Thang_${selectedMonth}_${selectedYear}.pdf`);
+    showToast('📄 Đã xuất PDF Kế Hoạch Tháng!');
+  };
+
   const totalProgressSum = rows.reduce((acc, curr) => acc + (parseInt(curr.progress) || 0), 0);
   const avgProgress = rows.length > 0 ? Math.round(totalProgressSum / rows.length) : 0;
   const completedTasks = rows.filter(r => r.status === 'Done').length;
@@ -222,6 +289,12 @@ export default function Plan() {
           </div>
 
           <button 
+            onClick={exportToPDF} 
+            className="bg-rose-600 hover:bg-rose-700 text-white px-4 py-2 rounded-xl font-black transition text-xs shadow flex items-center gap-1.5"
+          >
+            <span>📄</span> Xuất PDF
+          </button>
+          <button 
             onClick={exportToExcel} 
             className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl font-black transition text-xs shadow flex items-center gap-1.5"
           >
@@ -229,6 +302,23 @@ export default function Plan() {
           </button>
         </div>
       </div>
+
+      {/* URGENT DEADLINE WARNING BANNER */}
+      {urgentRows.length > 0 && (
+        <div className="bg-rose-50 border-2 border-dashed border-rose-300 p-4 rounded-2xl mb-6">
+          <h3 className="font-black text-sm text-rose-800 mb-2 flex items-center gap-1.5">
+            <span>🚨</span> Cảnh Báo Deadline Sắp Tới ({urgentRows.length} mục — hạn ≤ 3 ngày nhưng tiến độ &lt; 50%)
+          </h3>
+          <div className="space-y-1.5">
+            {urgentRows.map(r => (
+              <div key={r.id} className="flex justify-between items-center bg-white px-3 py-2 rounded-xl border border-rose-100 text-xs font-bold">
+                <span className="text-slate-900">• {r.task || '(Chưa đặt tên)'} <span className="text-slate-400">({r.category})</span></span>
+                <span className="text-rose-700">📅 Hạn: {r.deadline} (còn {daysUntil(r.deadline)} ngày) — Tiến độ {r.progress}%</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* DASHBOARD METRICS CARDS */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">

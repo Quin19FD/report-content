@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 export default function Layout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [time, setTime] = useState('');
+  const [authed, setAuthed] = useState(true);
 
   useEffect(() => {
     const updateClock = () => {
@@ -15,6 +16,17 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     const interval = setInterval(updateClock, 30000);
     return () => clearInterval(interval);
   }, []);
+
+  // Auth gate: chưa đăng nhập → chuyển sang /login
+  useEffect(() => {
+    if (router.pathname === '/login') return;
+    if (typeof window !== 'undefined' && !localStorage.getItem('cf_auth')) {
+      setAuthed(false);
+      router.push('/login');
+    }
+  }, [router.pathname]);
+
+  if (!authed) return null;
 
   return (
     <div className="flex min-h-screen bg-slate-900/5 text-slate-800 font-sans">
