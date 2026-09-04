@@ -30,7 +30,7 @@
   {
     "link": "https://www.facebook.com/groups/1212071995953351/my_pending_content",
     "time": "chưa duyệt",
-    "reach": "",
+    "reach": "0",
     "hook": "",
     "suggestion": "",
     "group": "Group Lập trình Python",
@@ -38,7 +38,8 @@
     "platform": "Facebook",
     "isShared": false,
     "image": null,
-    "videoType": "Shorts"
+    "videoType": "Shorts",
+    "date": "2026-09-03"
   },
   {
     "date": "2026-09-03",

@@ -37,16 +37,33 @@ bun run dev
 > ```
 > Webhook cũng có thể cấu hình trực tiếp trong app (tab Quản Lý → khung 🤖, lưu vào `data/webhook-config.json`, ưu tiên hơn env).
 
-## Đồng bộ dữ liệu qua Git
+## Cơ sở dữ liệu (libSQL / Turso)
 
-Toàn bộ dữ liệu nằm trong `web/data/*.json` và được commit lên git. Người khác chỉ cần `git pull` là thấy toàn bộ báo cáo/kế hoạch.
+Dữ liệu lưu trong **libSQL** (SQLite tương thích cloud) qua bảng `kv`. Không dùng file JSON rời nữa.
+
+- **Chạy local**: KHÔNG cần cài gì. App tự tạo file `web/data/app.db`, dữ liệu vẫn được giữ lại giữa các lần chạy.
+- **Deploy thật (Vercel...)**: tạo DB Turso miễn phí rồi set 2 biến môi trường:
+  ```
+  TURSO_DATABASE_URL=libsql://ten-db.turso.io
+  TURSO_AUTH_TOKEN=xxxxx
+  ```
+  Có URL này thì app tự dùng cloud, chạy tốt trên serverless (không mất dữ liệu khi function khởi động lại).
+
+### Lấy Turso (3 lệnh)
+```bash
+curl -sSfL https://get.tur.so/install.sh | bash   # cài CLI
+turso auth signup                                  # đăng ký (mở trình duyệt)
+turso db create contentflow                        # tạo DB
+turso db show contentflow --url                    # -> TURSO_DATABASE_URL
+turso db tokens create contentflow                 # -> TURSO_AUTH_TOKEN
+```
+
+### Di trú dữ liệu cũ
+Lần chạy đầu, nếu bảng `kv` còn trống, app **tự nạp** toàn bộ file `web/data/*.json` cũ vào DB — không mất dữ liệu. Các file JSON cũ vẫn giữ nguyên làm backup.
 
 ## Deploy lên Vercel (Lưu ý quan trọng)
 
-App đang lưu dữ liệu bằng **file JSON trong thư mục project** — phù hợp chạy local + đồng bộ git. Nếu deploy lên Vercel:
-
-1. Filesystem của serverless là **tạm thời**: ghi vào `data/` sẽ mất khi function tái khởi động.
-2. Để chạy thật trên Vercel, cần đổi tầng lưu trữ sang database cloud (Vercel Postgres / Supabase / Turso) ở các API routes `web/src/pages/api/*`.
+App lưu dữ liệu trong **libSQL/Turso** (xem mục trên), chạy tốt trên serverless. Deploy Vercel:
 
 Các bước deploy (sau khi đã có DB hoặc chỉ muốn demo read-only):
 
@@ -57,7 +74,7 @@ vercel            # lần đầu: link project
 vercel --prod
 ```
 
-Env cần set trên Vercel: `NEXT_PUBLIC_ADMIN_PASSWORD`, `NEXT_PUBLIC_MEMBER_PASSWORD`, `NOTIFICATION_WEBHOOK_URL`.
+Env cần set trên Vercel: `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`, `NEXT_PUBLIC_ADMIN_PASSWORD`, `NEXT_PUBLIC_MEMBER_PASSWORD`, `NOTIFICATION_WEBHOOK_URL`.
 
 ## Cấu trúc
 
@@ -68,5 +85,6 @@ web/src/pages/
   analytics.tsx  # Dashboard BI
   login.tsx      # Đăng nhập phân quyền
   api/           # reports (đa ngày), plans, groups, yt-channels, tt-channels, webhook-config
-web/data/        # JSON data (git-synced)
+web/src/lib/db.ts  # tầng KV libSQL/Turso + auto-migrate
+web/data/app.db    # SQLite local (khi chưa set Turso) — không commit
 ```

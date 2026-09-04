@@ -1,19 +1,16 @@
-import fs from 'fs';
-import path from 'path';
 import type { NextApiRequest, NextApiResponse } from 'next';
+import { kvGet, kvSet } from '../../lib/db';
 
-const PLAN_FILE = path.join(process.cwd(), 'data', 'plans.json');
-
-export default function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (!fs.existsSync(path.dirname(PLAN_FILE))) fs.mkdirSync(path.dirname(PLAN_FILE), { recursive: true });
-
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'GET') {
-    if (!fs.existsSync(PLAN_FILE)) return res.status(200).json({ objectives: '', tasks: [] });
-    return res.status(200).json(JSON.parse(fs.readFileSync(PLAN_FILE, 'utf-8')));
+    const data = await kvGet('plans');
+    return res.status(200).json(data ?? { objectives: '', tasks: [] });
   }
 
   if (req.method === 'POST') {
-    fs.writeFileSync(PLAN_FILE, JSON.stringify(req.body, null, 2));
+    await kvSet('plans', req.body);
     return res.status(200).json({ success: true });
   }
+
+  return res.status(405).json({ error: 'Method not allowed' });
 }

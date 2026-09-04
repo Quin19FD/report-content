@@ -4,3 +4,6 @@ node_modules
 dist
 build
 .DS_Store
+web/data/app.db
+web/data/app.db-shm
+web/data/app.db-wal

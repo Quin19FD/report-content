@@ -1,19 +1,16 @@
-import fs from 'fs';
-import path from 'path';
 import type { NextApiRequest, NextApiResponse } from 'next';
+import { kvGet, kvSet } from '../../lib/db';
 
-const GROUPS_FILE = path.join(process.cwd(), 'data', 'groups.json');
-
-export default function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (!fs.existsSync(path.dirname(GROUPS_FILE))) fs.mkdirSync(path.dirname(GROUPS_FILE), { recursive: true });
-
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'GET') {
-    if (!fs.existsSync(GROUPS_FILE)) return res.status(200).json([]);
-    return res.status(200).json(JSON.parse(fs.readFileSync(GROUPS_FILE, 'utf-8')));
+    const data = await kvGet('groups');
+    return res.status(200).json(data ?? []);
   }
 
   if (req.method === 'POST') {
-    fs.writeFileSync(GROUPS_FILE, JSON.stringify(req.body, null, 2));
+    await kvSet('groups', req.body);
     return res.status(200).json({ success: true });
   }
+
+  return res.status(405).json({ error: 'Method not allowed' });
 }

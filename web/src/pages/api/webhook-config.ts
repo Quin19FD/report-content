@@ -1,34 +1,28 @@
-import fs from 'fs';
-import path from 'path';
 import type { NextApiRequest, NextApiResponse } from 'next';
+import { kvGet, kvSet } from '../../lib/db';
 
-const CONFIG_FILE = path.join(process.cwd(), 'data', 'webhook-config.json');
-const STATE_FILE = path.join(process.cwd(), 'data', 'bot-state.json');
+interface BotState {
+  date: string;
+  count: number;
+}
 
-export default function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (!fs.existsSync(path.dirname(CONFIG_FILE))) fs.mkdirSync(path.dirname(CONFIG_FILE), { recursive: true });
-
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'GET') {
     let remainingToday = 2;
-    try {
-      const today = new Date().toISOString().split('T')[0];
-      if (fs.existsSync(STATE_FILE)) {
-        const parsed = JSON.parse(fs.readFileSync(STATE_FILE, 'utf-8'));
-        if (parsed.date === today) remainingToday = Math.max(0, 2 - parsed.count);
-      }
-    } catch (e) {}
+    const today = new Date().toISOString().split('T')[0];
+    const state = await kvGet<BotState>('bot-state');
+    if (state && state.date === today) remainingToday = Math.max(0, 2 - state.count);
+
     let url = process.env.NOTIFICATION_WEBHOOK_URL || '';
-    if (fs.existsSync(CONFIG_FILE)) {
-      try {
-        url = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf-8')).url || url;
-      } catch (e) {}
-    }
+    const config = await kvGet<{ url?: string }>('webhook-config');
+    if (config?.url) url = config.url;
+
     return res.status(200).json({ url, remainingToday });
   }
 
   if (req.method === 'POST') {
     const { url } = req.body;
-    fs.writeFileSync(CONFIG_FILE, JSON.stringify({ url }, null, 2));
+    await kvSet('webhook-config', { url });
     return res.status(200).json({ success: true });
   }
 
