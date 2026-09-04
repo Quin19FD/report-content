@@ -68,7 +68,7 @@ export default function Analytics() {
       {/* HEADER */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-200">
         <div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight">Dashboard Phân Tích & Biểu Đồ</h1>
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Dashboard Phân Tích & Biểu Đồ</h1>
           <p className="text-slate-500 text-sm mt-1 font-semibold">So sánh tháng • Xu hướng ngày • Hiệu suất đa nền tảng</p>
         </div>
 
@@ -133,7 +133,7 @@ export default function Analytics() {
 
       {/* LINE CHART: xu hướng reach theo ngày */}
       <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm mb-6">
-        <div className="flex justify-between items-center pb-3 border-b border-slate-100 mb-4">
+        <div className="flex flex-wrap gap-x-2 gap-y-1 justify-between items-center pb-3 border-b border-slate-100 mb-4">
           <h2 className="font-black text-base text-slate-900">Xu Hướng Reach/Views Theo Ngày — {monthLabel}</h2>
           <span className="text-xs text-slate-400 font-bold">Đỉnh: {maxDayReach.toLocaleString()} reach</span>
         </div>
@@ -166,7 +166,7 @@ export default function Analytics() {
       {/* BAR CHART + DONUT */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-6">
         <div className="lg:col-span-8 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-          <div className="flex justify-between items-center pb-3 border-b border-slate-100">
+          <div className="flex flex-wrap gap-x-2 gap-y-1 justify-between items-center pb-3 border-b border-slate-100">
             <h2 className="font-black text-base text-slate-900">So Sánh Reach Giữa Các Nền Tảng</h2>
             <span className="text-xs text-slate-400 font-bold">{monthLabel}</span>
           </div>

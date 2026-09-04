@@ -243,7 +243,7 @@ export default function Plan() {
       {/* HEADER & CONTROLS */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-200">
         <div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight">Kế Hoạch Chiến Lược Tháng</h1>
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Kế Hoạch Chiến Lược Tháng</h1>
           <p className="text-slate-500 text-sm mt-1 font-semibold">Nhập chi tiết mục tiêu • Quản lý Form & Bảng Excel / Kanban • Tự động lưu</p>
         </div>
 
@@ -487,8 +487,8 @@ export default function Plan() {
               <span className="text-xs text-slate-400 font-bold">Bấm nút Sửa để tải lên Form</span>
             </div>
 
-            <div className="max-h-[520px] overflow-y-auto pr-1">
-              <table className="w-full text-left text-sm">
+            <div className="max-h-[520px] overflow-auto pr-1">
+              <table className="w-full min-w-[560px] text-left text-sm">
                 <thead className="sticky top-0 bg-white shadow-sm z-10">
                   <tr className="border-b border-slate-200 text-slate-500 font-black uppercase text-xs">
                     <th className="py-2.5 px-1">Hạng mục</th>

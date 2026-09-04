@@ -473,8 +473,8 @@ export default function Home() {
       {/* TOP HEADER - MULTI-DATE FILTER CONTROLS */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-200">
         <div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight">Dashboard Báo Cáo Nội Dung</h1>
-          <div className="flex items-center gap-3 text-sm text-slate-600 mt-1 font-bold">
+        <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Dashboard Báo Cáo Nội Dung</h1>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-slate-600 mt-1 font-bold">
             <span className="text-slate-900">📊 {filteredEntries.length} bài đăng</span>
             <span>•</span>
             <span className="text-emerald-600 font-extrabold">📈 {totalReachSum.toLocaleString()} Reach</span>
@@ -815,7 +815,7 @@ export default function Home() {
         <div className="lg:col-span-7 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
            
            {/* Right Panel Main Tabs */}
-           <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+           <div className="flex flex-wrap gap-2 justify-between items-center border-b border-slate-100 pb-3">
               <button 
                 type="button"
                 onClick={() => setRightTab('REPORTS')} 
@@ -834,7 +834,7 @@ export default function Home() {
               )}
             {rightTab === 'REPORTS' && (
               <input 
-                className="border border-slate-200 px-3.5 py-2 rounded-xl text-xs font-bold w-44 focus:ring-2 focus:ring-sky-500" 
+                className="border border-slate-200 px-3.5 py-2 rounded-xl text-xs font-bold w-full sm:w-44 focus:ring-2 focus:ring-sky-500" 
                 placeholder="🔍 Tìm kiếm..." 
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
@@ -864,8 +864,8 @@ export default function Home() {
                 ))}
               </div>
 
-               <div className="max-h-[460px] overflow-y-auto pr-1">
-                 <table className="w-full text-left text-sm">
+               <div className="max-h-[460px] overflow-auto pr-1">
+                 <table className="w-full min-w-[680px] text-left text-sm">
                      <thead className="sticky top-0 bg-white shadow-sm z-10">
                        <tr className="border-b border-slate-200 text-slate-500 font-black uppercase text-xs">
                          <th className="py-2.5 px-1">Ngày</th>
@@ -926,10 +926,10 @@ export default function Home() {
                  <h3 className="font-bold text-sm text-sky-700 mb-3 flex items-center gap-1.5">
                    <span>📘</span> Quản Lý Nhóm Facebook
                  </h3>
-                 <div className="flex gap-2 mb-3">
-                     <input className="border border-slate-200 p-2.5 rounded-xl w-1/3 text-xs font-semibold" placeholder="Tên nhóm" value={groupName} onChange={e => setGroupName(e.target.value)} />
-                     <input className="border border-slate-200 p-2.5 rounded-xl w-1/3 text-xs font-semibold" placeholder="Link nhóm" value={groupLink} onChange={e => setGroupLink(e.target.value)} />
-                     <button onClick={addGroup} className="bg-sky-600 hover:bg-sky-700 text-white px-4 rounded-xl font-bold text-xs">Thêm</button>
+                 <div className="flex flex-col sm:flex-row gap-2 mb-3">
+                     <input className="border border-slate-200 p-2.5 rounded-xl flex-1 text-xs font-semibold" placeholder="Tên nhóm" value={groupName} onChange={e => setGroupName(e.target.value)} />
+                     <input className="border border-slate-200 p-2.5 rounded-xl flex-1 text-xs font-semibold" placeholder="Link nhóm" value={groupLink} onChange={e => setGroupLink(e.target.value)} />
+                     <button onClick={addGroup} className="bg-sky-600 hover:bg-sky-700 text-white px-4 py-2.5 rounded-xl font-bold text-xs w-full sm:w-auto">Thêm</button>
                  </div>
                  <table className="w-full text-xs">
                      <thead><tr className="border-b border-slate-200 text-slate-400 text-left"><th className="py-1.5">Nhóm FB</th><th className="text-right">Link</th></tr></thead>
@@ -949,10 +949,10 @@ export default function Home() {
                  <h3 className="font-bold text-sm text-red-600 mb-3 flex items-center gap-1.5">
                    <span>🎬</span> Quản Lý Kênh YouTube
                  </h3>
-                 <div className="flex gap-2 mb-3">
-                     <input className="border border-slate-200 p-2.5 rounded-xl w-1/3 text-xs font-semibold" placeholder="Tên kênh" value={ytChannelName} onChange={e => setYtChannelName(e.target.value)} />
-                     <input className="border border-slate-200 p-2.5 rounded-xl w-1/3 text-xs font-semibold" placeholder="Link kênh" value={ytChannelLink} onChange={e => setYtChannelLink(e.target.value)} />
-                     <button onClick={addYtChannel} className="bg-red-600 hover:bg-red-700 text-white px-4 rounded-xl font-bold text-xs">Thêm</button>
+                 <div className="flex flex-col sm:flex-row gap-2 mb-3">
+                     <input className="border border-slate-200 p-2.5 rounded-xl flex-1 text-xs font-semibold" placeholder="Tên kênh" value={ytChannelName} onChange={e => setYtChannelName(e.target.value)} />
+                     <input className="border border-slate-200 p-2.5 rounded-xl flex-1 text-xs font-semibold" placeholder="Link kênh" value={ytChannelLink} onChange={e => setYtChannelLink(e.target.value)} />
+                     <button onClick={addYtChannel} className="bg-red-600 hover:bg-red-700 text-white px-4 py-2.5 rounded-xl font-bold text-xs w-full sm:w-auto">Thêm</button>
                  </div>
                  <table className="w-full text-xs">
                      <thead><tr className="border-b border-slate-200 text-slate-400 text-left"><th className="py-1.5">Kênh YouTube</th><th className="text-right">Link</th></tr></thead>
@@ -972,10 +972,10 @@ export default function Home() {
                 <h3 className="font-bold text-sm text-sky-400 mb-3 flex items-center gap-1.5">
                   <span>🎵</span> Quản Lý Kênh TikTok
                 </h3>
-                <div className="flex gap-2 mb-3">
-                    <input className="border border-slate-800 bg-slate-900 p-2.5 rounded-xl w-1/3 text-xs font-semibold text-white placeholder-slate-500" placeholder="Tên kênh TikTok" value={ttChannelName} onChange={e => setTtChannelName(e.target.value)} />
-                    <input className="border border-slate-800 bg-slate-900 p-2.5 rounded-xl w-1/3 text-xs font-semibold text-white placeholder-slate-500" placeholder="Link kênh TikTok" value={ttChannelLink} onChange={e => setTtChannelLink(e.target.value)} />
-                    <button onClick={addTtChannel} className="bg-sky-500 hover:bg-sky-600 text-slate-950 px-4 rounded-xl font-black text-xs">Thêm</button>
+                <div className="flex flex-col sm:flex-row gap-2 mb-3">
+                    <input className="border border-slate-800 bg-slate-900 p-2.5 rounded-xl flex-1 text-xs font-semibold text-white placeholder-slate-500" placeholder="Tên kênh TikTok" value={ttChannelName} onChange={e => setTtChannelName(e.target.value)} />
+                    <input className="border border-slate-800 bg-slate-900 p-2.5 rounded-xl flex-1 text-xs font-semibold text-white placeholder-slate-500" placeholder="Link kênh TikTok" value={ttChannelLink} onChange={e => setTtChannelLink(e.target.value)} />
+                    <button onClick={addTtChannel} className="bg-sky-500 hover:bg-sky-600 text-slate-950 px-4 py-2.5 rounded-xl font-black text-xs w-full sm:w-auto">Thêm</button>
                 </div>
                 <table className="w-full text-xs">
                     <thead><tr className="border-b border-slate-800 text-slate-400 text-left"><th className="py-1.5">Kênh TikTok</th><th className="text-right">Link</th></tr></thead>
