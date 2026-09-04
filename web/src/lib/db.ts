@@ -9,10 +9,11 @@ let ready: Promise<void> | null = null;
 
 function getClient(): Client {
   if (client) return client;
-  const url = process.env.TURSO_DATABASE_URL;
+  const url = process.env.TURSO_DATABASE_URL?.trim();
+  const authToken = process.env.TURSO_AUTH_TOKEN?.trim();
   if (url) {
     // Cloud (Turso) — dùng khi deploy (Vercel...). Bền vững, đa người dùng.
-    client = createClient({ url, authToken: process.env.TURSO_AUTH_TOKEN });
+    client = createClient({ url, authToken });
   } else {
     // Local — file SQLite, không cần cài đặt gì, dữ liệu vẫn được giữ lại.
     if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
