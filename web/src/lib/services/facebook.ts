@@ -1,4 +1,4 @@
-import { type ChannelApiConfig, type ReportEntry } from '../types';
+import { type ChannelApiConfig, type ReportEntry, normalizePostUrl } from '../types';
 
 interface FacebookSyncOutput {
   posts: ReportEntry[];
@@ -73,21 +73,9 @@ export async function fetchFacebookPageData(
       // Bỏ qua lỗi insights nếu quyền token chưa cấp đủ
     }
 
-    // 2. Lấy danh sách bài viết gần đây của Fanpage
+    // 2. Lấy danh sách bài viết và video/reels của Fanpage
     const limit = Math.min(100, Math.max(20, days * 4));
     const sinceDate = days > 1 ? new Date(Date.now() - days * 86400000).toISOString().split('T')[0] : '';
-    const postsUrl = `https://graph.facebook.com/v20.0/${encodeURIComponent(effectivePageId)}/published_posts?fields=id,message,created_time,permalink_url,shares&limit=${limit}&access_token=${encodeURIComponent(effectiveToken)}`;
-    const postsRes = await fetch(postsUrl);
-
-    if (!postsRes.ok) {
-      const errJson = (await postsRes.json().catch(() => ({}))) as { error?: { message?: string } };
-      return {
-        posts: [],
-        inboxes,
-        status: 'ERROR',
-        message: errJson.error?.message || `Lỗi gọi Facebook API HTTP ${postsRes.status}`,
-      };
-    }
 
     interface FbPostItem {
       id: string;
@@ -97,9 +85,117 @@ export async function fetchFacebookPageData(
       shares?: { count?: number };
     }
 
-    const postsJson = (await postsRes.json()) as { data?: FbPostItem[] };
-    const rawPosts = postsJson.data || [];
+    interface FbVideoItem {
+      id: string;
+      title?: string;
+      description?: string;
+      views?: number;
+      created_time: string;
+      permalink_url?: string;
+    }
 
+    // Gọi song song danh sách published_posts và videos để lấy đủ Reels & Bài viết
+    const [postsRes, videosRes] = await Promise.all([
+      fetch(
+        `https://graph.facebook.com/v20.0/${encodeURIComponent(effectivePageId)}/published_posts?fields=id,message,created_time,permalink_url,shares&limit=${limit}&access_token=${encodeURIComponent(effectiveToken)}`
+      ).catch(() => null),
+      fetch(
+        `https://graph.facebook.com/v20.0/${encodeURIComponent(effectivePageId)}/videos?fields=id,title,views,description,created_time,permalink_url&limit=${limit}&access_token=${encodeURIComponent(effectiveToken)}`
+      ).catch(() => null),
+    ]);
+
+    let rawPosts: FbPostItem[] = [];
+    if (postsRes && postsRes.ok) {
+      const postsJson = (await postsRes.json()) as { data?: FbPostItem[] };
+      rawPosts = postsJson.data || [];
+    }
+
+    let rawVideos: FbVideoItem[] = [];
+    if (videosRes && videosRes.ok) {
+      const videosJson = (await videosRes.json()) as { data?: FbVideoItem[] };
+      rawVideos = videosJson.data || [];
+    }
+
+    // 3. Thu thập URL bài viết và batch query Facebook URL Engagement (Likes, Comments, Shares)
+    const allUrls: string[] = [];
+    rawPosts.forEach((p) => {
+      if (p.permalink_url) allUrls.push(p.permalink_url);
+    });
+    rawVideos.forEach((v) => {
+      const fullUrl = v.permalink_url?.startsWith('http')
+        ? v.permalink_url
+        : `https://www.facebook.com${v.permalink_url || ''}`;
+      if (fullUrl) allUrls.push(fullUrl);
+    });
+
+    const urlMap = new Map<string, { likes: number; comments: number; shares: number }>();
+    for (let i = 0; i < allUrls.length; i += 30) {
+      const chunk = allUrls.slice(i, i + 30);
+      try {
+        const engUrl = `https://graph.facebook.com/v20.0/?ids=${encodeURIComponent(chunk.join(','))}&fields=engagement&access_token=${encodeURIComponent(effectiveToken)}`;
+        const engRes = await fetch(engUrl);
+        if (engRes.ok) {
+          const engJson = (await engRes.json()) as Record<
+            string,
+            { engagement?: { reaction_count?: number; comment_count?: number; share_count?: number } }
+          >;
+          for (const [u, val] of Object.entries(engJson)) {
+            if (val?.engagement) {
+              urlMap.set(u, {
+                likes: val.engagement.reaction_count || 0,
+                comments: val.engagement.comment_count || 0,
+                shares: val.engagement.share_count || 0,
+              });
+            }
+          }
+        }
+      } catch {
+        // Bỏ qua lỗi batch nhỏ
+      }
+    }
+
+    // 4. Xử lý Video/Reels trước (vì có chỉ số Lượt xem views chính xác từ Facebook)
+    for (const video of rawVideos) {
+      const createdDate = video.created_time ? video.created_time.split('T')[0] : '';
+      if (days > 1) {
+        if (sinceDate && createdDate < sinceDate) continue;
+      } else if (targetDate && createdDate !== targetDate) {
+        continue;
+      }
+
+      const fullUrl = video.permalink_url?.startsWith('http')
+        ? video.permalink_url
+        : `https://www.facebook.com${video.permalink_url || `/reel/${video.id}/`}`;
+      const eng = urlMap.get(fullUrl) || { likes: 0, comments: 0, shares: 0 };
+
+      const timeStr = video.created_time
+        ? new Date(video.created_time).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false })
+        : '12:00';
+
+      const isReel = fullUrl.includes('/reel/');
+      const videoType = isReel ? 'Shorts' : 'Video Dài';
+
+      posts.push({
+        id: Date.now() + Math.floor(Math.random() * 10000),
+        date: createdDate || new Date().toISOString().split('T')[0],
+        time: timeStr,
+        platform: 'Facebook',
+        pageName: config.channelName,
+        group: config.channelName,
+        entityType: 'PAGE',
+        link: fullUrl,
+        reach: video.views !== undefined ? video.views : (eng.likes + eng.comments + eng.shares),
+        inboxCount: inboxes,
+        likes: eng.likes,
+        comments: eng.comments,
+        shares: eng.shares,
+        hook: video.title || (video.description ? video.description.slice(0, 100) : ''),
+        videoType,
+        isShared: false,
+      });
+    }
+
+    // 5. Xử lý bài viết thường (published_posts), chống trùng với video đã thêm
     for (const post of rawPosts) {
       const createdDate = post.created_time ? post.created_time.split('T')[0] : '';
       if (days > 1) {
@@ -108,30 +204,55 @@ export async function fetchFacebookPageData(
         continue;
       }
 
-      const reach = 0;
+      const link = post.permalink_url || `https://facebook.com/${post.id}`;
+      const normLink = normalizePostUrl(link);
+
+      // Kiểm tra xem đã có trong danh sách posts (từ video) chưa
+      const existingIdx = posts.findIndex((p) => {
+        if (p.link && normLink) return normalizePostUrl(p.link) === normLink;
+        return false;
+      });
+
+      const eng = (post.permalink_url ? urlMap.get(post.permalink_url) : null) || { likes: 0, comments: 0, shares: post.shares?.count || 0 };
+      const likes = eng.likes || 0;
+      const comments = eng.comments || 0;
+      const shares = post.shares?.count || eng.shares || 0;
+      const reach = (likes + comments + shares) > 0 ? (likes * 5 + comments * 2 + shares * 10) : 0;
+
+      if (existingIdx >= 0) {
+        // Đã có từ video, cập nhật thêm message bài viết nếu cần
+        if (post.message && !posts[existingIdx].hook) {
+          posts[existingIdx].hook = post.message.slice(0, 100);
+        }
+        if (shares > (Number(posts[existingIdx].shares) || 0)) {
+          posts[existingIdx].shares = shares;
+        }
+        continue;
+      }
 
       const timeStr = post.created_time
         ? new Date(post.created_time).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false })
         : '12:00';
 
       posts.push({
-        id: Date.now() + Math.floor(Math.random() * 1000),
+        id: Date.now() + Math.floor(Math.random() * 10000),
         date: createdDate || new Date().toISOString().split('T')[0],
         time: timeStr,
         platform: 'Facebook',
         pageName: config.channelName,
         group: config.channelName,
         entityType: 'PAGE',
-        link: post.permalink_url || `https://facebook.com/${post.id}`,
+        link,
         reach,
-        inboxCount: inboxes, // Gán tin nhắn ngày vào bài đại diện
-        shares: post.shares?.count || 0,
+        inboxCount: inboxes,
+        likes,
+        comments,
+        shares,
         hook: post.message ? post.message.slice(0, 100) : '',
         videoType: 'Shorts',
         isShared: false,
       });
     }
-
     return {
       posts,
       inboxes,

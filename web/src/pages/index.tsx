@@ -67,6 +67,9 @@ export default function Home() {
     link: '', 
     time: getCurrentTime(), 
     reach: '', 
+    likes: '0',
+    comments: '0',
+    shares: '0',
     inboxCount: '0',
     hook: '', 
     suggestion: '', 
@@ -237,6 +240,9 @@ export default function Home() {
       body: JSON.stringify({ 
         ...form, 
         reach: form.reach || '0',
+        likes: parseInt(form.likes) || 0,
+        comments: parseInt(form.comments) || 0,
+        shares: parseInt(form.shares) || 0,
         inboxCount: parseInt(form.inboxCount) || 0,
         date: form.date || todayStr,
         time: submissionTime,
@@ -249,7 +255,6 @@ export default function Home() {
         notifyBot
       })
     });
-
     // Bot feedback
     if (notifyBot && !editingId) {
       try {
@@ -268,6 +273,9 @@ export default function Home() {
       link: '', 
       time: getCurrentTime(), 
       reach: '', 
+      likes: '0',
+      comments: '0',
+      shares: '0',
       inboxCount: '0',
       hook: '', 
       suggestion: '', 
@@ -288,6 +296,26 @@ export default function Home() {
     await fetch('/api/reports', { method: 'DELETE', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ id }) });
     fetchData();
     showToast('🗑️ Đã xóa báo cáo!');
+  };
+  const handleClearAllReports = async () => {
+    if (!confirm('Bạn có chắc chắn muốn xóa TOÀN BỘ dữ liệu bài đăng đã lưu không?\n\nToàn bộ thông tin Fanpage, cấu hình API kênh và Kế hoạch vẫn sẽ được giữ nguyên 100%.')) return;
+    try {
+      const res = await fetch('/api/reports', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clearAll: true }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setLastSyncResult(null);
+        fetchData();
+        showToast('🗑️ Đã xóa sạch toàn bộ bài đăng! Thông tin page & kênh được giữ nguyên.');
+      } else {
+        showToast('❌ Không thể xóa dữ liệu');
+      }
+    } catch {
+      showToast('❌ Lỗi kết nối khi xóa dữ liệu');
+    }
   };
   // Clone: nhân bản 1 báo cáo (đổi link/reach sau)
   const cloneEntry = async (entry: ReportEntry) => {
@@ -343,6 +371,9 @@ export default function Home() {
       link: entry.link || '', 
       time: entry.time || getCurrentTime(), 
       reach: entry.reach !== undefined ? String(entry.reach) : '', 
+      likes: entry.likes !== undefined ? String(entry.likes) : '0',
+      comments: entry.comments !== undefined ? String(entry.comments) : '0',
+      shares: entry.shares !== undefined ? String(entry.shares) : '0',
       inboxCount: entry.inboxCount !== undefined ? String(entry.inboxCount) : '0',
       hook: entry.hook || '', 
       suggestion: entry.suggestion || '', 
@@ -446,6 +477,9 @@ export default function Home() {
       // 3. TABLE DATA
       const tableData = filteredEntries.map((e, index) => {
         const currReach = parseInt(String(e.reach || 0)) || 0;
+        const currLikes = parseInt(String(e.likes || 0)) || 0;
+        const currComments = parseInt(String(e.comments || 0)) || 0;
+        const currShares = parseInt(String(e.shares || 0)) || 0;
         const currInbox = parseInt(String(e.inboxCount || 0)) || 0;
         return [
           (index + 1).toString(),
@@ -455,14 +489,15 @@ export default function Home() {
           e.group || '--',
           e.link || '',
           (currReach ? currReach.toLocaleString() : '0') + (currReach >= 10000 ? ' (VIRAL)' : ''),
-          currInbox.toString(),
-          e.isShared ? '✓ Có' : '✕ Chưa',
-          e.hook || '--'
+          currLikes.toLocaleString(),
+          currComments.toLocaleString(),
+          currShares.toLocaleString(),
+          currInbox.toString()
         ];
       });
 
       autoTable(doc, {
-        head: [["STT", "Ngày", "Nền tảng", "Giờ", "Kênh / Page / Loại", "Link bài viết / video", "Reach", "Inbox", "Shared", "Câu Hook / Tiêu đề"]],
+        head: [["STT", "Ngày", "Nền tảng", "Giờ", "Kênh / Page", "Link bài viết / video", "Lượt xem", "Like", "Comment", "Share", "Inbox"]],
         body: tableData,
         startY: 65,
         theme: 'grid',
@@ -936,17 +971,46 @@ export default function Home() {
                )}
              </div>
            </div>
-           {/* Hook & Suggestion */}
-           <div className="grid grid-cols-2 gap-3">
+           {/* Likes, Comments, Shares */}
+           <div className="grid grid-cols-3 gap-2.5">
              <div>
-               <label className="block text-xs font-black text-slate-800 uppercase tracking-wide mb-1.5">Câu Hook / Tiêu đề</label>
-               <input className="w-full border border-slate-200 p-3 rounded-xl text-sm font-semibold text-slate-900" placeholder="Ghi chú câu hook..." value={form.hook} onChange={e => setForm({...form, hook: e.target.value})} />
+               <label className="block text-xs font-black text-slate-800 uppercase tracking-wide mb-1.5">❤️ Lượt Like</label>
+               <input 
+                 type="number" 
+                 min="0" 
+                 className="w-full border border-slate-200 p-2.5 rounded-xl text-sm font-bold text-rose-700 bg-white" 
+                 placeholder="0" 
+                 value={form.likes} 
+                 onChange={e => setForm({...form, likes: e.target.value})} 
+               />
              </div>
+             <div>
+               <label className="block text-xs font-black text-slate-800 uppercase tracking-wide mb-1.5">💬 Comment</label>
+               <input 
+                 type="number" 
+                 min="0" 
+                 className="w-full border border-slate-200 p-2.5 rounded-xl text-sm font-bold text-sky-700 bg-white" 
+                 placeholder="0" 
+                 value={form.comments} 
+                 onChange={e => setForm({...form, comments: e.target.value})} 
+               />
+             </div>
+             <div>
+               <label className="block text-xs font-black text-slate-800 uppercase tracking-wide mb-1.5">↗️ Share</label>
+               <input 
+                 type="number" 
+                 min="0" 
+                 className="w-full border border-slate-200 p-2.5 rounded-xl text-sm font-bold text-emerald-700 bg-white" 
+                 placeholder="0" 
+                 value={form.shares} 
+                 onChange={e => setForm({...form, shares: e.target.value})} 
+               />
+             </div>
+           </div>
 
-             <div>
-               <label className="block text-xs font-black text-slate-800 uppercase tracking-wide mb-1.5">Đề xuất tối ưu</label>
-               <input className="w-full border border-slate-200 p-3 rounded-xl text-sm font-semibold text-slate-900" placeholder="Ý tưởng sửa..." value={form.suggestion} onChange={e => setForm({...form, suggestion: e.target.value})} />
-             </div>
+           <div>
+             <label className="block text-xs font-black text-slate-800 uppercase tracking-wide mb-1.5">Đề xuất tối ưu / Ghi chú</label>
+             <input className="w-full border border-slate-200 p-2.5 rounded-xl text-sm font-semibold text-slate-900" placeholder="Ý tưởng cải thiện nội dung..." value={form.suggestion} onChange={e => setForm({...form, suggestion: e.target.value})} />
            </div>
 
            {/* Share Toggle */}
@@ -1048,17 +1112,18 @@ export default function Home() {
                         <th className="px-1">Giờ</th>
                         <th className="px-1">Kênh/Page</th>
                         <th className="px-1">Link</th>
-                        <th className="px-1">Reach</th>
-                        <th className="px-1 text-center">💬 Inbox</th>
-                        <th className="px-1">Share</th>
-                        <th className="px-1 hidden md:table-cell">Câu Hook</th>
+                        <th className="px-1 text-center">👁️ Lượt xem</th>
+                        <th className="px-1 text-center">❤️ Like</th>
+                        <th className="px-1 text-center">💬 Comment</th>
+                        <th className="px-1 text-center">↗️ Share</th>
+                        <th className="px-1 text-center">📥 Inbox</th>
                         <th className="text-right px-1">Hành động</th>
                       </tr>
                      </thead>
                      <tbody>
                        {filteredEntries.length === 0 ? (
                         <tr>
-                          <td colSpan={10} className="py-12 text-center text-slate-400 font-semibold text-sm">
+                          <td colSpan={11} className="py-12 text-center text-slate-400 font-semibold text-sm">
                             Chưa có báo cáo nào trong mục này.
                           </td>
                         </tr>
@@ -1071,7 +1136,7 @@ export default function Home() {
                               </span>
                             </td>
                             <td className="py-3 px-1 font-bold text-slate-800 text-xs">{e.time || '--:--'}</td>
-                            <td className="py-3 px-1 font-semibold text-slate-700 truncate max-w-[100px] text-xs">{e.group || '--'}</td>
+                            <td className="py-3 px-1 font-semibold text-slate-700 truncate max-w-[110px] text-xs" title={e.group || '--'}>{e.group || '--'}</td>
                             <td className="py-3 px-1">
                               {e.link ? (
                                 <a href={e.link.startsWith('http') ? e.link : `https://${e.link}`} target="_blank" rel="noopener noreferrer" className="text-sky-600 font-extrabold hover:underline bg-sky-50 px-2 py-0.5 rounded text-xs">
@@ -1081,11 +1146,55 @@ export default function Home() {
                                 <span className="text-slate-300">--</span>
                               )}
                             </td>
-                            <td className="py-2 px-1"><div className="flex items-center gap-1"><input defaultValue={e.reach !== undefined ? String(e.reach) : ''} onBlur={ev => { if (ev.target.value !== (e.reach !== undefined ? String(e.reach) : '')) updateEntryInline(e.id, 'reach', ev.target.value); }} className="w-16 border border-transparent hover:border-slate-200 focus:border-sky-400 p-1 rounded-lg font-black text-slate-900 text-xs bg-transparent" />{(parseInt(String(e.reach || 0)) || 0) >= 10000 && <span title="Viral ≥ 10k" className="text-[11px]">🔥</span>}</div></td>
+                            {/* Lượt xem / Reach */}
                             <td className="py-2 px-1 text-center">
-                              <div className="flex items-center justify-center gap-1">
+                              <div className="flex items-center justify-center gap-0.5">
+                                <input
+                                  type="number"
+                                  min="0"
+                                  defaultValue={e.reach !== undefined ? String(e.reach) : '0'}
+                                  onBlur={ev => { if (ev.target.value !== (e.reach !== undefined ? String(e.reach) : '0')) updateEntryInline(e.id, 'reach', ev.target.value); }}
+                                  className="w-16 border border-transparent hover:border-slate-200 focus:border-sky-400 p-1 rounded-lg font-black text-slate-900 text-xs bg-transparent text-center"
+                                />
+                                {(parseInt(String(e.reach || 0)) || 0) >= 10000 && <span title="Viral ≥ 10k" className="text-[11px]">🔥</span>}
+                              </div>
+                            </td>
+                            {/* Like */}
+                            <td className="py-2 px-1 text-center">
+                              <input
+                                type="number"
+                                min="0"
+                                defaultValue={e.likes !== undefined ? String(e.likes) : '0'}
+                                onBlur={ev => { if (ev.target.value !== (e.likes !== undefined ? String(e.likes) : '0')) updateEntryInline(e.id, 'likes', ev.target.value); }}
+                                className="w-14 border border-transparent hover:border-rose-200 focus:border-rose-400 p-1 rounded-lg font-black text-rose-700 text-xs bg-transparent text-center"
+                              />
+                            </td>
+                            {/* Comment */}
+                            <td className="py-2 px-1 text-center">
+                              <input
+                                type="number"
+                                min="0"
+                                defaultValue={e.comments !== undefined ? String(e.comments) : '0'}
+                                onBlur={ev => { if (ev.target.value !== (e.comments !== undefined ? String(e.comments) : '0')) updateEntryInline(e.id, 'comments', ev.target.value); }}
+                                className="w-14 border border-transparent hover:border-sky-200 focus:border-sky-400 p-1 rounded-lg font-black text-sky-700 text-xs bg-transparent text-center"
+                              />
+                            </td>
+                            {/* Share */}
+                            <td className="py-2 px-1 text-center">
+                              <input
+                                type="number"
+                                min="0"
+                                defaultValue={e.shares !== undefined ? String(e.shares) : '0'}
+                                onBlur={ev => { if (ev.target.value !== (e.shares !== undefined ? String(e.shares) : '0')) updateEntryInline(e.id, 'shares', ev.target.value); }}
+                                className="w-14 border border-transparent hover:border-emerald-200 focus:border-emerald-400 p-1 rounded-lg font-black text-emerald-700 text-xs bg-transparent text-center"
+                              />
+                            </td>
+                            {/* Inbox */}
+                            <td className="py-2 px-1 text-center">
+                              <div className="flex items-center justify-center gap-0.5">
                                 <input 
                                   type="number" 
+                                  min="0"
                                   defaultValue={e.inboxCount !== undefined ? String(e.inboxCount) : '0'} 
                                   onBlur={ev => { if (ev.target.value !== (e.inboxCount !== undefined ? String(e.inboxCount) : '0')) updateEntryInline(e.id, 'inboxCount', ev.target.value); }} 
                                   className="w-12 border border-transparent hover:border-indigo-200 focus:border-indigo-400 p-1 rounded-lg font-black text-indigo-700 text-xs bg-transparent text-center" 
@@ -1093,7 +1202,7 @@ export default function Home() {
                                 {(parseInt(String(e.inboxCount || 0)) || 0) > 0 && <span title="Có khách inbox" className="text-[10px]">💬</span>}
                               </div>
                             </td>
-                            <td className="py-3 px-1">{e.isShared ? <span className="text-emerald-700 font-extrabold text-xs">✓</span> : <span className="text-slate-300 font-bold text-xs">✕</span>}</td>
+                            {/* Actions */}
                             <td className="py-3 px-1 text-right">
                               <div className="flex justify-end gap-1">
                                 <button onClick={() => cloneEntry(e)} title="Nhân bản báo cáo" className="bg-sky-50 hover:bg-sky-100 text-sky-700 px-2 py-1 rounded font-extrabold text-xs">⧉</button>
@@ -1139,6 +1248,16 @@ export default function Home() {
                         <span>{opt.label}</span>
                       </button>
                     ))}
+                    <button
+                      type="button"
+                      disabled={isSyncing}
+                      onClick={handleClearAllReports}
+                      className="px-3 py-2 rounded-xl font-black text-xs transition flex items-center gap-1 shadow-md bg-rose-950/80 hover:bg-rose-900 border border-rose-800/60 text-rose-300 active:scale-95 disabled:opacity-50"
+                      title="Xóa toàn bộ bài đăng để đồng bộ lại từ đầu (thông tin Fanpage và cấu hình kênh vẫn giữ nguyên)"
+                    >
+                      <span>🗑️</span>
+                      <span>Xóa bài để đồng bộ lại</span>
+                    </button>
                   </div>
                 </div>
 

@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { kvGet, kvSet, kvList, type ReportEntry } from '../../lib/db';
+import { kvGet, kvSet, kvDel, kvList, type ReportEntry } from '../../lib/db';
 
 interface BotState {
   date: string;
@@ -165,7 +165,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   if (req.method === 'DELETE') {
-    const { id } = req.body;
+    const { id, clearAll } = req.body || {};
+
+    if (clearAll) {
+      const buckets = await kvList('reports-');
+      for (const { key } of buckets) {
+        await kvDel(key);
+      }
+      return res.status(200).json({ success: true, count: buckets.length });
+    }
+
     const buckets = await kvList<ReportEntry[]>('reports-');
     let found = false;
 
