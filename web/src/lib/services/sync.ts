@@ -8,9 +8,21 @@ import { fetchTikTokChannelData } from './tiktok';
 async function getOrCreateChannelConfigs(): Promise<ChannelApiConfig[]> {
   const existing = await kvGet<ChannelApiConfig[]>('channel-api-configs');
   if (Array.isArray(existing) && existing.length > 0) {
+    if (!existing.some((c) => c.id === 'fb_kevin')) {
+      existing.splice(1, 0, {
+        id: 'fb_kevin',
+        platform: 'Facebook',
+        channelName: 'Nguyễn Kevin',
+        enabled: true,
+        fbPageId: '122283732116061265',
+        fbPageAccessToken: process.env.FACEBOOK_PAGE_ACCESS_TOKEN || 'EAArhbgXPxmsBSuFi1Xrf99ERwAka4mtXi1iFpwqRHA7ZCJSE4f7ZBrEv91oS81IbqZC6qVzZBBjlJ4PDu4ml4OXdqD2gFcH8qfWxMFzs4brNyFmQKaJIhHqfzZBghth135ZCgxplrtqrS8eZBDHob9ZCPmsyQSDWWKs7bfdjhFFgkrzpMHRYZCBwgsipf9i6PermSjYSZBiLrnrDmEHcyiNDipBmKXnYTjzuGDo3BiKz2c2V4Xw3tq6UOZBeUTgpT2lKS50d4m57GcZAsTAVv2ZBa0O3vKf9tdByrkkvcZAgZDZD',
+        lastSyncStatus: 'IDLE',
+        lastSyncMessage: 'Trang cá nhân Nguyễn Kevin (UID 122283732116061265)',
+      });
+      await kvSet('channel-api-configs', existing);
+    }
     return existing;
   }
-
   // Cấu hình ban đầu dựa trên danh sách kênh hiện có của dự án
   const defaults: ChannelApiConfig[] = [
     {
@@ -22,6 +34,16 @@ async function getOrCreateChannelConfigs(): Promise<ChannelApiConfig[]> {
       fbPageAccessToken: process.env.FACEBOOK_PAGE_ACCESS_TOKEN || 'EAArhbgXPxmsBSuFi1Xrf99ERwAka4mtXi1iFpwqRHA7ZCJSE4f7ZBrEv91oS81IbqZC6qVzZBBjlJ4PDu4ml4OXdqD2gFcH8qfWxMFzs4brNyFmQKaJIhHqfzZBghth135ZCgxplrtqrS8eZBDHob9ZCPmsyQSDWWKs7bfdjhFFgkrzpMHRYZCBwgsipf9i6PermSjYSZBiLrnrDmEHcyiNDipBmKXnYTjzuGDo3BiKz2c2V4Xw3tq6UOZBeUTgpT2lKS50d4m57GcZAsTAVv2ZBa0O3vKf9tdByrkkvcZAgZDZD',
       lastSyncStatus: 'IDLE',
       lastSyncMessage: 'Chưa chạy đồng bộ lần nào',
+    },
+    {
+      id: 'fb_kevin',
+      platform: 'Facebook',
+      channelName: 'Nguyễn Kevin',
+      enabled: true,
+      fbPageId: '122283732116061265',
+      fbPageAccessToken: process.env.FACEBOOK_PAGE_ACCESS_TOKEN || 'EAArhbgXPxmsBSuFi1Xrf99ERwAka4mtXi1iFpwqRHA7ZCJSE4f7ZBrEv91oS81IbqZC6qVzZBBjlJ4PDu4ml4OXdqD2gFcH8qfWxMFzs4brNyFmQKaJIhHqfzZBghth135ZCgxplrtqrS8eZBDHob9ZCPmsyQSDWWKs7bfdjhFFgkrzpMHRYZCBwgsipf9i6PermSjYSZBiLrnrDmEHcyiNDipBmKXnYTjzuGDo3BiKz2c2V4Xw3tq6UOZBeUTgpT2lKS50d4m57GcZAsTAVv2ZBa0O3vKf9tdByrkkvcZAgZDZD',
+      lastSyncStatus: 'IDLE',
+      lastSyncMessage: 'Trang cá nhân Nguyễn Kevin (UID 122283732116061265)',
     },
     {
       id: 'yt_8syncdev',
@@ -84,10 +106,11 @@ export async function syncAllChannels(targetDate?: string, days: number = 1): Pr
         syncMessage = res.message || '';
       } else if (config.platform === 'YouTube') {
         const res = await fetchYouTubeChannelData(config, dateKey, days);
+        fetchedPosts = res.posts;
         syncStatus = res.status;
         syncMessage = res.message || '';
       } else if (config.platform === 'TikTok') {
-        const res = await fetchTikTokChannelData(config, dateKey);
+        const res = await fetchTikTokChannelData(config, dateKey, days);
         fetchedPosts = res.posts;
         syncStatus = res.status;
         syncMessage = res.message || '';

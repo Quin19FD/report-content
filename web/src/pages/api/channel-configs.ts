@@ -24,6 +24,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           lastSyncMessage: 'Chưa cấu hình API Token',
         },
         {
+          id: 'fb_kevin',
+          platform: 'Facebook',
+          channelName: 'Nguyễn Kevin',
+          enabled: true,
+          fbPageId: '122283732116061265',
+          fbPageAccessToken: process.env.FACEBOOK_PAGE_ACCESS_TOKEN || 'EAArhbgXPxmsBSuFi1Xrf99ERwAka4mtXi1iFpwqRHA7ZCJSE4f7ZBrEv91oS81IbqZC6qVzZBBjlJ4PDu4ml4OXdqD2gFcH8qfWxMFzs4brNyFmQKaJIhHqfzZBghth135ZCgxplrtqrS8eZBDHob9ZCPmsyQSDWWKs7bfdjhFFgkrzpMHRYZCBwgsipf9i6PermSjYSZBiLrnrDmEHcyiNDipBmKXnYTjzuGDo3BiKz2c2V4Xw3tq6UOZBeUTgpT2lKS50d4m57GcZAsTAVv2ZBa0O3vKf9tdByrkkvcZAgZDZD',
+          lastSyncStatus: 'IDLE',
+          lastSyncMessage: 'Trang cá nhân Nguyễn Kevin (UID 122283732116061265)',
+        },
+        {
           id: 'yt_8syncdev',
           platform: 'YouTube',
           channelName: '8 Sync Dev',
@@ -43,6 +53,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           lastSyncMessage: 'Chờ đồng bộ',
         },
       ];
+      await kvSet('channel-api-configs', configs);
+    }
+    // Đảm bảo kênh Trang cá nhân Nguyễn Kevin luôn có mặt nếu chưa thêm
+    if (!configs.some((c) => c.id === 'fb_kevin')) {
+      configs.splice(1, 0, {
+        id: 'fb_kevin',
+        platform: 'Facebook',
+        channelName: 'Nguyễn Kevin',
+        enabled: true,
+        fbPageId: '122283732116061265',
+        fbPageAccessToken: process.env.FACEBOOK_PAGE_ACCESS_TOKEN || 'EAArhbgXPxmsBSuFi1Xrf99ERwAka4mtXi1iFpwqRHA7ZCJSE4f7ZBrEv91oS81IbqZC6qVzZBBjlJ4PDu4ml4OXdqD2gFcH8qfWxMFzs4brNyFmQKaJIhHqfzZBghth135ZCgxplrtqrS8eZBDHob9ZCPmsyQSDWWKs7bfdjhFFgkrzpMHRYZCBwgsipf9i6PermSjYSZBiLrnrDmEHcyiNDipBmKXnYTjzuGDo3BiKz2c2V4Xw3tq6UOZBeUTgpT2lKS50d4m57GcZAsTAVv2ZBa0O3vKf9tdByrkkvcZAgZDZD',
+        lastSyncStatus: 'IDLE',
+        lastSyncMessage: 'Trang cá nhân Nguyễn Kevin (UID 122283732116061265)',
+      });
       await kvSet('channel-api-configs', configs);
     }
 

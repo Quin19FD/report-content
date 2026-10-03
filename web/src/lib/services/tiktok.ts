@@ -8,9 +8,11 @@ interface TikTokSyncOutput {
 
 export async function fetchTikTokChannelData(
   config: ChannelApiConfig,
-  targetDate?: string
+  targetDate?: string,
+  days: number = 1
 ): Promise<TikTokSyncOutput> {
   const username = config.ttUsername?.trim().replace(/^@/, '');
+  const sinceDate = days > 1 ? new Date(Date.now() - days * 86400000).toISOString().split('T')[0] : '';
   const accessToken = config.ttAccessToken?.trim();
   const rapidApiKey = config.rapidApiKey?.trim();
 
@@ -193,12 +195,11 @@ export async function fetchTikTokChannelData(
           return {
             posts: [],
             status: 'SUCCESS',
-            message: `Kênh @${username} hoạt động tốt • ${videos} video • ${follower.toLocaleString()} followers • ${hearts.toLocaleString()} lượt thích`,
+            message: `Kênh @${username} kết nối tốt (${videos} video, ${follower.toLocaleString()} followers). Cần nhập RapidAPI Key hoặc TikTok Token để tự động quét từng video.`,
           };
         }
       }
     }
-
     return {
       posts: [],
       status: 'SUCCESS',

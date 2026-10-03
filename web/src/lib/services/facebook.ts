@@ -27,53 +27,63 @@ export async function fetchFacebookPageData(
   const posts: ReportEntry[] = [];
   let inboxes = 0;
 
-  // 0. Tự động kiểm tra và trích xuất đúng Page ID & Page Access Token từ /me/accounts
-  let effectivePageId = pageId.replace(/^(https?:\/\/)?(www\.)?facebook\.com\/?/i, '').replace(/\/$/, '').trim();
+  // 0. Nhận diện trang cá nhân (Nguyễn Kevin) hay Fanpage (8 Sync Dev)
+  const isPersonal =
+    config.id === 'fb_kevin' ||
+    (config.channelName && config.channelName.toLowerCase().includes('kevin')) ||
+    pageId === '122283732116061265' ||
+    pageId === '8sync';
+
+  let effectivePageId = isPersonal ? 'me' : pageId.replace(/^(https?:\/\/)?(www\.)?facebook\.com\/?/i, '').replace(/\/$/, '').trim();
   let effectiveToken = token;
 
-  try {
-    const accRes = await fetch(
-      `https://graph.facebook.com/v20.0/me/accounts?fields=id,name,access_token&access_token=${encodeURIComponent(token)}`
-    );
-    if (accRes.ok) {
-      const accData = (await accRes.json()) as {
-        data?: Array<{ id: string; name: string; access_token: string }>;
-      };
-      const pages = accData.data || [];
-      if (pages.length > 0) {
-        const found =
-          pages.find(
-            (p) =>
-              p.id === effectivePageId ||
-              (config.channelName && p.name.toLowerCase().includes(config.channelName.toLowerCase())) ||
-              p.name.toLowerCase().includes('8 sync')
-          ) || pages[0];
+  if (!isPersonal) {
+    try {
+      const accRes = await fetch(
+        `https://graph.facebook.com/v20.0/me/accounts?fields=id,name,access_token&access_token=${encodeURIComponent(token)}`
+      );
+      if (accRes.ok) {
+        const accData = (await accRes.json()) as {
+          data?: Array<{ id: string; name: string; access_token: string }>;
+        };
+        const pages = accData.data || [];
+        if (pages.length > 0) {
+          const found =
+            pages.find(
+              (p) =>
+                p.id === effectivePageId ||
+                (config.channelName && p.name.toLowerCase().includes(config.channelName.toLowerCase())) ||
+                p.name.toLowerCase().includes('8 sync')
+            ) || pages[0];
 
-        if (found) {
-          effectivePageId = found.id;
-          effectiveToken = found.access_token || effectiveToken;
+          if (found) {
+            effectivePageId = found.id;
+            effectiveToken = found.access_token || effectiveToken;
+          }
         }
       }
+    } catch {
+      // Nếu token đã là Page Token hoặc lỗi mạng thì dùng token gốc
     }
-  } catch {
-    // Nếu token đã là Page Token hoặc lỗi mạng thì dùng token gốc
   }
 
   try {
-    // 1. Lấy tin nhắn mới theo ngày từ Page Insights
-    try {
-      const insightUrl = `https://graph.facebook.com/v20.0/${encodeURIComponent(effectivePageId)}/insights?metric=page_messages_new_conversations_unique&period=day&access_token=${encodeURIComponent(effectiveToken)}`;
-      const insightRes = await fetch(insightUrl);
-      if (insightRes.ok) {
-        const insightJson = (await insightRes.json()) as { data?: Array<{ values?: Array<{ value: number }> }> };
-        const val = insightJson.data?.[0]?.values?.slice(-1)[0]?.value;
-        if (typeof val === 'number') inboxes = val;
+    // 1. Lấy tin nhắn mới theo ngày từ Page Insights (chỉ dành cho Fanpage)
+    if (!isPersonal) {
+      try {
+        const insightUrl = `https://graph.facebook.com/v20.0/${encodeURIComponent(effectivePageId)}/insights?metric=page_messages_new_conversations_unique&period=day&access_token=${encodeURIComponent(effectiveToken)}`;
+        const insightRes = await fetch(insightUrl);
+        if (insightRes.ok) {
+          const insightJson = (await insightRes.json()) as { data?: Array<{ values?: Array<{ value: number }> }> };
+          const val = insightJson.data?.[0]?.values?.slice(-1)[0]?.value;
+          if (typeof val === 'number') inboxes = val;
+        }
+      } catch {
+        // Bỏ qua lỗi insights nếu quyền token chưa cấp đủ
       }
-    } catch {
-      // Bỏ qua lỗi insights nếu quyền token chưa cấp đủ
     }
 
-    // 2. Lấy danh sách bài viết và video/reels của Fanpage
+    // 2. Lấy danh sách bài viết và video/reels
     const limit = Math.min(100, Math.max(20, days * 4));
     const sinceDate = days > 1 ? new Date(Date.now() - days * 86400000).toISOString().split('T')[0] : '';
 
@@ -92,29 +102,51 @@ export async function fetchFacebookPageData(
       views?: number;
       created_time: string;
       permalink_url?: string;
+      likes?: { summary?: { total_count?: number } };
+      comments?: { summary?: { total_count?: number } };
     }
-
-    // Gọi song song danh sách published_posts và videos để lấy đủ Reels & Bài viết
-    const [postsRes, videosRes] = await Promise.all([
-      fetch(
-        `https://graph.facebook.com/v20.0/${encodeURIComponent(effectivePageId)}/published_posts?fields=id,message,created_time,permalink_url,shares&limit=${limit}&access_token=${encodeURIComponent(effectiveToken)}`
-      ).catch(() => null),
-      fetch(
-        `https://graph.facebook.com/v20.0/${encodeURIComponent(effectivePageId)}/videos?fields=id,title,views,description,created_time,permalink_url&limit=${limit}&access_token=${encodeURIComponent(effectiveToken)}`
-      ).catch(() => null),
-    ]);
 
     let rawPosts: FbPostItem[] = [];
-    if (postsRes && postsRes.ok) {
-      const postsJson = (await postsRes.json()) as { data?: FbPostItem[] };
-      rawPosts = postsJson.data || [];
+    let rawVideos: FbVideoItem[] = [];
+
+    if (isPersonal) {
+      // Trang cá nhân: gọi /me/posts bằng User Token
+      const personalUrl = `https://graph.facebook.com/v20.0/me/posts?fields=id,message,created_time,permalink_url,shares&limit=${limit}&access_token=${encodeURIComponent(effectiveToken)}`;
+      const personalRes = await fetch(personalUrl).catch(() => null);
+      if (personalRes && personalRes.ok) {
+        const json = (await personalRes.json()) as { data?: FbPostItem[] };
+        rawPosts = json.data || [];
+      }
+
+      if (rawPosts.length === 0) {
+        return {
+          posts: [],
+          inboxes: 0,
+          status: 'SUCCESS',
+          message: 'Trang cá nhân Nguyễn Kevin đã kết nối (UID 122283732116061265). Meta yêu cầu cấp quyền "user_posts" trong User Token để tự động quét timeline cá nhân (hoặc nhập link thủ công qua Nhập Nhanh).',
+        };
+      }
+    } else {
+      // Fanpage: Gọi song song published_posts và videos (kèm views, likes, comments)
+      const [postsRes, videosRes] = await Promise.all([
+        fetch(
+          `https://graph.facebook.com/v20.0/${encodeURIComponent(effectivePageId)}/published_posts?fields=id,message,created_time,permalink_url,shares&limit=${limit}&access_token=${encodeURIComponent(effectiveToken)}`
+        ).catch(() => null),
+        fetch(
+          `https://graph.facebook.com/v20.0/${encodeURIComponent(effectivePageId)}/videos?fields=id,title,views,description,created_time,permalink_url,likes.summary(true),comments.summary(true)&limit=${limit}&access_token=${encodeURIComponent(effectiveToken)}`
+        ).catch(() => null),
+      ]);
+
+      if (postsRes && postsRes.ok) {
+        const postsJson = (await postsRes.json()) as { data?: FbPostItem[] };
+        rawPosts = postsJson.data || [];
+      }
+      if (videosRes && videosRes.ok) {
+        const videosJson = (await videosRes.json()) as { data?: FbVideoItem[] };
+        rawVideos = videosJson.data || [];
+      }
     }
 
-    let rawVideos: FbVideoItem[] = [];
-    if (videosRes && videosRes.ok) {
-      const videosJson = (await videosRes.json()) as { data?: FbVideoItem[] };
-      rawVideos = videosJson.data || [];
-    }
 
     // 3. Thu thập URL bài viết và batch query Facebook URL Engagement (Likes, Comments, Shares)
     const allUrls: string[] = [];
@@ -186,8 +218,8 @@ export async function fetchFacebookPageData(
         link: fullUrl,
         reach: video.views !== undefined ? video.views : (eng.likes + eng.comments + eng.shares),
         inboxCount: inboxes,
-        likes: eng.likes,
-        comments: eng.comments,
+        likes: video.likes?.summary?.total_count !== undefined ? video.likes.summary.total_count : eng.likes,
+        comments: video.comments?.summary?.total_count !== undefined ? video.comments.summary.total_count : eng.comments,
         shares: eng.shares,
         hook: video.title || (video.description ? video.description.slice(0, 100) : ''),
         videoType,

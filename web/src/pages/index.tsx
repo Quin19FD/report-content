@@ -672,6 +672,7 @@ export default function Home() {
               <option value={1}>⚡ Quét hôm nay</option>
               <option value={7}>⚡ Quét 7 ngày qua</option>
               <option value={30}>⚡ Quét 30 ngày qua</option>
+              <option value={90}>⚡ Quét 90 ngày qua</option>
             </select>
             <button 
               type="button"
@@ -1236,6 +1237,7 @@ export default function Home() {
                       { d: 1, label: 'Quét hôm nay' },
                       { d: 7, label: 'Quét 7 ngày qua' },
                       { d: 30, label: 'Quét 30 ngày qua' },
+                      { d: 90, label: 'Quét 90 ngày qua' },
                     ].map((opt) => (
                       <button
                         key={opt.d}
