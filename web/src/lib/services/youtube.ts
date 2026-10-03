@@ -20,7 +20,7 @@ export async function fetchYouTubeChannelData(
   config: ChannelApiConfig,
   targetDate?: string
 ): Promise<YouTubeSyncOutput> {
-  const apiKey = config.ytApiKey?.trim() || process.env.YOUTUBE_API_KEY?.trim();
+  const apiKey = config.ytApiKey?.trim() || process.env.YOUTUBE_API_KEY?.trim() || 'AIzaSyAG4YH7v0nqCxF5A2CJaj1pxXuBZg8MwI0';
   let playlistId = config.ytUploadsPlaylistId?.trim();
 
   // Quy ước chuẩn của YouTube: Channel ID 'UCxxxx' tương ứng Uploads Playlist 'UUxxxx'

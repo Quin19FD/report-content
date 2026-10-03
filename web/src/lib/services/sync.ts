@@ -29,7 +29,7 @@ async function getOrCreateChannelConfigs(): Promise<ChannelApiConfig[]> {
       channelName: '8 Sync Dev',
       enabled: true,
       ytChannelId: process.env.YOUTUBE_CHANNEL_ID || 'UCMWzM6NOoVvr9484XBSJEjg',
-      ytApiKey: process.env.YOUTUBE_API_KEY || '',
+      ytApiKey: process.env.YOUTUBE_API_KEY || 'AIzaSyAG4YH7v0nqCxF5A2CJaj1pxXuBZg8MwI0',
       lastSyncStatus: 'IDLE',
       lastSyncMessage: 'Chưa chạy đồng bộ lần nào',
     },

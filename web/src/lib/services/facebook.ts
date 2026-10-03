@@ -11,8 +11,8 @@ export async function fetchFacebookPageData(
   config: ChannelApiConfig,
   targetDate?: string
 ): Promise<FacebookSyncOutput> {
-  const pageId = config.fbPageId?.trim();
-  const token = config.fbPageAccessToken?.trim();
+  const pageId = config.fbPageId?.trim() || process.env.FACEBOOK_PAGE_ID?.trim() || '588402817683765';
+  const token = config.fbPageAccessToken?.trim() || process.env.FACEBOOK_PAGE_ACCESS_TOKEN?.trim() || 'EAArhbgXPxmsBSuFi1Xrf99ERwAka4mtXi1iFpwqRHA7ZCJSE4f7ZBrEv91oS81IbqZC6qVzZBBjlJ4PDu4ml4OXdqD2gFcH8qfWxMFzs4brNyFmQKaJIhHqfzZBghth135ZCgxplrtqrS8eZBDHob9ZCPmsyQSDWWKs7bfdjhFFgkrzpMHRYZCBwgsipf9i6PermSjYSZBiLrnrDmEHcyiNDipBmKXnYTjzuGDo3BiKz2c2V4Xw3tq6UOZBeUTgpT2lKS50d4m57GcZAsTAVv2ZBa0O3vKf9tdByrkkvcZAgZDZD';
 
   if (!pageId || !token) {
     return {
