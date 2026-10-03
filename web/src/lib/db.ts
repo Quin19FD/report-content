@@ -23,9 +23,10 @@ function getClient(): Client {
     // Cloud (Turso) — dùng khi deploy (Vercel...). Bền vững, đa người dùng.
     client = createClient({ url, authToken });
   } else {
-    // Local — file SQLite, không cần cài đặt gì, dữ liệu vẫn được giữ lại.
-    if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
-    client = createClient({ url: `file:${path.join(DATA_DIR, 'app.db')}` });
+    // Local / Vercel fallback — Trên Vercel nếu chưa nối Turso, thư mục /tmp là nơi duy nhất được ghi file SQLite
+    const dbDir = process.env.VERCEL ? '/tmp' : DATA_DIR;
+    if (!fs.existsSync(dbDir)) fs.mkdirSync(dbDir, { recursive: true });
+    client = createClient({ url: `file:${path.join(dbDir, 'app.db')}` });
   }
   return client;
 }
