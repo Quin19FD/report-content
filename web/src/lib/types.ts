@@ -76,3 +76,38 @@ export function resolvePageName(entry: ReportEntry): string {
   const name = entry.pageName || entry.group || 'Chưa phân loại';
   return name.trim();
 }
+
+export function normalizePostUrl(url?: string): string {
+  if (!url) return '';
+  try {
+    const parsed = new URL(url.startsWith('http') ? url : `https://${url}`);
+    const searchParams = new URLSearchParams(parsed.search);
+    const trackingParams = ['fbclid', 'mibextid', 'feature', 'si', '_r', '_t', 'ref', 'source', 'utm_source', 'utm_medium', 'utm_campaign'];
+    trackingParams.forEach((p) => searchParams.delete(p));
+
+    const pathname = parsed.pathname.replace(/\/+$/, '');
+
+    if (parsed.hostname.includes('youtube.com') || parsed.hostname.includes('youtu.be')) {
+      if (pathname.startsWith('/shorts/')) {
+        const id = pathname.split('/shorts/')[1]?.split('/')[0];
+        if (id) return `youtube.com/video/${id}`;
+      } else if (parsed.hostname.includes('youtu.be')) {
+        const id = pathname.replace(/^\//, '');
+        if (id) return `youtube.com/video/${id}`;
+      } else if (searchParams.has('v')) {
+        const id = searchParams.get('v');
+        if (id) return `youtube.com/video/${id}`;
+      }
+    }
+
+    const fbPostMatch = pathname.match(/(?:posts|reel|videos)\/([0-9a-zA-Z_]+)/);
+    if (fbPostMatch && fbPostMatch[1]) {
+      return `facebook.com/content/${fbPostMatch[1]}`;
+    }
+
+    const cleanSearch = searchParams.toString();
+    return `${parsed.hostname.toLowerCase()}${pathname}${cleanSearch ? '?' + cleanSearch : ''}`;
+  } catch {
+    return url.trim().replace(/\/+$/, '').toLowerCase();
+  }
+}

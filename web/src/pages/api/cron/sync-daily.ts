@@ -34,12 +34,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       targetDate = new Date().toISOString().split('T')[0];
     }
   }
+  const daysParam = parseInt(String(req.query.days || req.body?.days || '1'), 10);
+  const days = isNaN(daysParam) || daysParam < 1 ? 1 : Math.min(30, daysParam);
 
   try {
-    const result = await syncAllChannels(targetDate);
+    const result = await syncAllChannels(targetDate, days);
     return res.status(200).json({
       success: true,
-      message: `Đã hoàn tất đồng bộ tự động ngày ${targetDate}`,
+      message: `Đã hoàn tất đồng bộ ${days > 1 ? `${days} ngày qua` : `ngày ${targetDate}`}`,
       result,
     });
   } catch (err) {

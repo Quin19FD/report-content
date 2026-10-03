@@ -18,7 +18,8 @@ function parseDurationSeconds(iso: string): number {
 
 export async function fetchYouTubeChannelData(
   config: ChannelApiConfig,
-  targetDate?: string
+  targetDate?: string,
+  days: number = 1
 ): Promise<YouTubeSyncOutput> {
   const apiKey = config.ytApiKey?.trim() || process.env.YOUTUBE_API_KEY?.trim() || 'AIzaSyAG4YH7v0nqCxF5A2CJaj1pxXuBZg8MwI0';
   let playlistId = config.ytUploadsPlaylistId?.trim();
@@ -41,7 +42,9 @@ export async function fetchYouTubeChannelData(
 
   try {
     // 1. Lấy danh sách video mới nhất trong Playlist Uploads
-    const listUrl = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet,contentDetails&playlistId=${encodeURIComponent(playlistId)}&maxResults=15&key=${encodeURIComponent(apiKey)}`;
+    const maxResults = Math.min(50, Math.max(15, days * 2));
+    const sinceDate = days > 1 ? new Date(Date.now() - days * 86400000).toISOString().split('T')[0] : '';
+    const listUrl = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet,contentDetails&playlistId=${encodeURIComponent(playlistId)}&maxResults=${maxResults}&key=${encodeURIComponent(apiKey)}`;
     const listRes = await fetch(listUrl);
 
     if (!listRes.ok) {
@@ -108,7 +111,11 @@ export async function fetchYouTubeChannelData(
     for (const v of videoDetails) {
       const published = v.snippet?.publishedAt || '';
       const pubDate = published ? published.split('T')[0] : '';
-      if (targetDate && pubDate !== targetDate) continue;
+      if (days > 1) {
+        if (sinceDate && pubDate < sinceDate) continue;
+      } else if (targetDate && pubDate !== targetDate) {
+        continue;
+      }
 
       const durationSec = v.contentDetails?.duration ? parseDurationSeconds(v.contentDetails.duration) : 0;
       const isShort = durationSec > 0 && durationSec <= 60;

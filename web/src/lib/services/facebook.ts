@@ -9,7 +9,8 @@ interface FacebookSyncOutput {
 
 export async function fetchFacebookPageData(
   config: ChannelApiConfig,
-  targetDate?: string
+  targetDate?: string,
+  days: number = 1
 ): Promise<FacebookSyncOutput> {
   const pageId = config.fbPageId?.trim() || process.env.FACEBOOK_PAGE_ID?.trim() || '588402817683765';
   const token = config.fbPageAccessToken?.trim() || process.env.FACEBOOK_PAGE_ACCESS_TOKEN?.trim() || 'EAArhbgXPxmsBSuFi1Xrf99ERwAka4mtXi1iFpwqRHA7ZCJSE4f7ZBrEv91oS81IbqZC6qVzZBBjlJ4PDu4ml4OXdqD2gFcH8qfWxMFzs4brNyFmQKaJIhHqfzZBghth135ZCgxplrtqrS8eZBDHob9ZCPmsyQSDWWKs7bfdjhFFgkrzpMHRYZCBwgsipf9i6PermSjYSZBiLrnrDmEHcyiNDipBmKXnYTjzuGDo3BiKz2c2V4Xw3tq6UOZBeUTgpT2lKS50d4m57GcZAsTAVv2ZBa0O3vKf9tdByrkkvcZAgZDZD';
@@ -73,7 +74,9 @@ export async function fetchFacebookPageData(
     }
 
     // 2. Lấy danh sách bài viết gần đây của Fanpage
-    const postsUrl = `https://graph.facebook.com/v20.0/${encodeURIComponent(effectivePageId)}/published_posts?fields=id,message,created_time,permalink_url,shares&limit=20&access_token=${encodeURIComponent(effectiveToken)}`;
+    const limit = Math.min(100, Math.max(20, days * 4));
+    const sinceDate = days > 1 ? new Date(Date.now() - days * 86400000).toISOString().split('T')[0] : '';
+    const postsUrl = `https://graph.facebook.com/v20.0/${encodeURIComponent(effectivePageId)}/published_posts?fields=id,message,created_time,permalink_url,shares&limit=${limit}&access_token=${encodeURIComponent(effectiveToken)}`;
     const postsRes = await fetch(postsUrl);
 
     if (!postsRes.ok) {
@@ -99,12 +102,16 @@ export async function fetchFacebookPageData(
 
     for (const post of rawPosts) {
       const createdDate = post.created_time ? post.created_time.split('T')[0] : '';
-      if (targetDate && createdDate !== targetDate) continue;
+      if (days > 1) {
+        if (sinceDate && createdDate < sinceDate) continue;
+      } else if (targetDate && createdDate !== targetDate) {
+        continue;
+      }
 
       let reach = 0;
       // 3. Lấy Reach cho từng bài nếu có quyền
       try {
-        const postInsightUrl = `https://graph.facebook.com/v20.0/${encodeURIComponent(post.id)}/insights?metric=post_impressions_unique&access_token=${encodeURIComponent(token)}`;
+        const postInsightUrl = `https://graph.facebook.com/v20.0/${encodeURIComponent(post.id)}/insights?metric=post_impressions_unique&access_token=${encodeURIComponent(effectiveToken)}`;
         const pRes = await fetch(postInsightUrl);
         if (pRes.ok) {
           const pJson = (await pRes.json()) as { data?: Array<{ values?: Array<{ value: number }> }> };

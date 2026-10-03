@@ -43,6 +43,7 @@ export default function Home() {
   const [channelConfigs, setChannelConfigs] = useState<ChannelApiConfig[]>([]);
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSyncResult, setLastSyncResult] = useState<SyncResult | null>(null);
+  const [syncDays, setSyncDays] = useState<number>(7);
   const [editingConfigId, setEditingConfigId] = useState<string | null>(null);
   const [configForm, setConfigForm] = useState({
     fbPageId: '',
@@ -125,17 +126,17 @@ export default function Home() {
     fetchData();
   }, [filterType, selectedDate, selectedMonth, selectedYear]);
 
-  const triggerManualSync = async () => {
+  const triggerManualSync = async (daysToSync: number = syncDays) => {
     setIsSyncing(true);
     try {
-      const res = await fetch('/api/cron/sync-daily', {
+      const res = await fetch(`/api/cron/sync-daily?days=${daysToSync}`, {
         method: 'POST',
         headers: { 'x-admin-auth': 'admin' },
       });
       const data = await res.json();
       if (data.success && data.result) {
         setLastSyncResult(data.result as SyncResult);
-        showToast(`⚡ Đồng bộ thành công: ${data.result.totalSyncedPosts} bài viết mới/cập nhật!`);
+        showToast(`⚡ Đã quét ${daysToSync > 1 ? `${daysToSync} ngày qua` : 'hôm nay'}: ${data.result.totalSyncedPosts} bài (không trùng lặp)!`);
         fetchData();
       } else {
         showToast(`⚠️ Đồng bộ: ${data.error || data.message || 'Xem chi tiết'}`);
@@ -625,27 +626,35 @@ export default function Home() {
             </select>
           )}
 
-          {/* NÚT ĐỒNG BỘ KÊNH TRỰC TIẾP TRÊN TOP TOOLBAR */}
-          <button 
-            type="button"
-            disabled={isSyncing}
-            onClick={triggerManualSync}
-            className={`px-3.5 py-2 rounded-xl font-extrabold transition shadow-md text-xs flex items-center gap-1.5 ml-auto ${isSyncing ? 'bg-indigo-400 text-white cursor-wait' : 'bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-white active:scale-95'}`}
-            title="Quét dữ liệu mới nhất từ Facebook, YouTube, TikTok"
-          >
-            {isSyncing ? (
-              <>
-                <span className="animate-spin text-sm">🔄</span>
-                <span>Đang quét...</span>
-              </>
-            ) : (
-              <>
-                <span>⚡</span>
-                <span>Đồng Bộ Kênh Ngay</span>
-              </>
-            )}
-          </button>
-
+          {/* NÚT ĐỒNG BỘ KÊNH TRÊN TOP TOOLBAR VỚI BỘ CHỌN NGÀY */}
+          <div className="flex items-center gap-1 bg-white p-1 rounded-xl border border-slate-200 ml-auto shadow-sm">
+            <select
+              value={syncDays}
+              onChange={e => setSyncDays(Number(e.target.value))}
+              disabled={isSyncing}
+              className="bg-slate-50 border-0 py-1.5 px-2 rounded-lg text-xs font-black text-slate-800 outline-none cursor-pointer"
+            >
+              <option value={1}>⚡ Quét hôm nay</option>
+              <option value={7}>⚡ Quét 7 ngày qua</option>
+              <option value={30}>⚡ Quét 30 ngày qua</option>
+            </select>
+            <button 
+              type="button"
+              disabled={isSyncing}
+              onClick={() => triggerManualSync(syncDays)}
+              className={`px-3 py-1.5 rounded-lg font-black transition text-xs flex items-center gap-1.5 ${isSyncing ? 'bg-indigo-400 text-white cursor-wait' : 'bg-indigo-600 hover:bg-indigo-700 text-white active:scale-95'}`}
+              title="Đảm bảo chống trùng bài: bài cũ chỉ cập nhật số view/like mới nhất"
+            >
+              {isSyncing ? (
+                <>
+                  <span className="animate-spin text-xs">🔄</span>
+                  <span>Đang quét...</span>
+                </>
+              ) : (
+                <span>Đồng Bộ Ngay</span>
+              )}
+            </button>
+          </div>
           <button 
             onClick={generatePDF} 
             disabled={isExportingPDF}
@@ -1113,24 +1122,24 @@ export default function Home() {
                       Tự động quét bài đăng mới, lượt Reach, Views và số Tin nhắn khách mỗi đêm (00:05)
                     </p>
                   </div>
-                  <button
-                    type="button"
-                    disabled={isSyncing}
-                    onClick={triggerManualSync}
-                    className={`px-4 py-2.5 rounded-xl font-black text-xs shadow-lg transition flex items-center justify-center gap-2 ${isSyncing ? 'bg-indigo-400/50 cursor-wait text-indigo-100' : 'bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-white'}`}
-                  >
-                    {isSyncing ? (
-                      <>
-                        <span className="animate-spin text-sm">🔄</span>
-                        <span>Đang quét dữ liệu...</span>
-                      </>
-                    ) : (
-                      <>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {[
+                      { d: 1, label: 'Quét hôm nay' },
+                      { d: 7, label: 'Quét 7 ngày qua' },
+                      { d: 30, label: 'Quét 30 ngày qua' },
+                    ].map((opt) => (
+                      <button
+                        key={opt.d}
+                        type="button"
+                        disabled={isSyncing}
+                        onClick={() => triggerManualSync(opt.d)}
+                        className={`px-3 py-2 rounded-xl font-black text-xs transition flex items-center gap-1 shadow-md ${isSyncing ? 'bg-indigo-400/40 cursor-wait text-indigo-200' : opt.d === 7 ? 'bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-white' : 'bg-slate-800 hover:bg-slate-700 text-slate-200'}`}
+                      >
                         <span>⚡</span>
-                        <span>Đồng Bộ Kênh Ngay</span>
-                      </>
-                    )}
-                  </button>
+                        <span>{opt.label}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 {/* Kết quả đồng bộ gần nhất nếu có */}

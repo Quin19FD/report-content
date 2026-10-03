@@ -1,5 +1,5 @@
 import { kvGet, kvSet } from '../db';
-import { type ChannelApiConfig, type ReportEntry, type SyncResult } from '../types';
+import { type ChannelApiConfig, type ReportEntry, type SyncResult, normalizePostUrl } from '../types';
 import { fetchFacebookPageData } from './facebook';
 import { fetchYouTubeChannelData } from './youtube';
 import { fetchTikTokChannelData } from './tiktok';
@@ -48,7 +48,7 @@ async function getOrCreateChannelConfigs(): Promise<ChannelApiConfig[]> {
   return defaults;
 }
 
-export async function syncAllChannels(targetDate?: string): Promise<SyncResult> {
+export async function syncAllChannels(targetDate?: string, days: number = 1): Promise<SyncResult> {
   const configs = await getOrCreateChannelConfigs();
   const dateKey = targetDate || new Date().toISOString().split('T')[0];
   const nowIso = new Date().toISOString();
@@ -77,14 +77,13 @@ export async function syncAllChannels(targetDate?: string): Promise<SyncResult> 
       let syncMessage = '';
 
       if (config.platform === 'Facebook') {
-        const res = await fetchFacebookPageData(config, dateKey);
+        const res = await fetchFacebookPageData(config, dateKey, days);
         fetchedPosts = res.posts;
         inboxCount = res.inboxes;
         syncStatus = res.status;
         syncMessage = res.message || '';
       } else if (config.platform === 'YouTube') {
-        const res = await fetchYouTubeChannelData(config, dateKey);
-        fetchedPosts = res.posts;
+        const res = await fetchYouTubeChannelData(config, dateKey, days);
         syncStatus = res.status;
         syncMessage = res.message || '';
       } else if (config.platform === 'TikTok') {
@@ -141,10 +140,14 @@ export async function syncAllChannels(targetDate?: string): Promise<SyncResult> 
     const merged = existing.slice();
 
     for (const post of newPosts) {
-      const idx = merged.findIndex(
-        (m) => (m.link && post.link && m.link.trim() === post.link.trim()) || m.id === post.id
-      );
-
+      const postNorm = normalizePostUrl(post.link);
+      const idx = merged.findIndex((m) => {
+        if (m.id === post.id) return true;
+        if (postNorm && m.link) {
+          return normalizePostUrl(m.link) === postNorm;
+        }
+        return false;
+      });
       if (idx >= 0) {
         // Cập nhật chỉ số mới nhất (Reach, Views, Likes, Inbox)
         merged[idx] = {
