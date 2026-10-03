@@ -805,7 +805,7 @@ export default function Home() {
                 >
                   <option value="">-- Chọn Fanpage / Trang --</option>
                   {groups.filter(g => g.type === 'PAGE' || g.type === 'PROFILE').map((g, i) => (
-                    <option key={i} value={g.name}>{g.type === 'PAGE' ? '📘 ' : '👤 '}{g.name}</option>
+                    <option key={i} value={g.name}>{g.type === 'PAGE' ? '📘 Fanpage: ' : '👤 Cá nhân: '}{g.name}</option>
                   ))}
                   {groups.filter(g => g.type === 'PAGE' || g.type === 'PROFILE').length === 0 && (
                     groups.map((g, i) => <option key={i} value={g.name}>{g.name}</option>)
