@@ -341,6 +341,9 @@ export default function Home() {
   // Bulk Import: dán nhiều link 1 lượt, tự nhận diện nền tảng
   const [showBulk, setShowBulk] = useState(false);
   const [bulkText, setBulkText] = useState('');
+  const [isProcessingCSV, setIsProcessingCSV] = useState(false);
+  const csvFileInputRef = useRef<HTMLInputElement>(null);
+
   const detectPlatform = (url: string): string => {
     const u = url.toLowerCase();
     if (u.includes('youtube.com') || u.includes('youtu.be')) return 'YouTube';
@@ -348,21 +351,179 @@ export default function Home() {
     if (u.includes('facebook.com') || u.includes('fb.watch')) return 'Facebook';
     return activeTab;
   };
-  const handleBulkImport = async () => {
-    const links = bulkText.split('\n').map(l => l.trim()).filter(l => l.length > 3);
-    if (links.length === 0) return alert('Dán ít nhất 1 link vào ô!');
-    for (const link of links) {
-      const platform = detectPlatform(link);
-      await fetch('/api/reports', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ date: todayStr, link, platform, time: getCurrentTime(), reach: '0', hook: '', group: '' })
-      });
+
+  // Xuất dữ liệu bảng hiện tại sang file Excel (.csv UTF-8 chuẩn font tiếng Việt)
+  const exportToCSV = () => {
+    if (filteredEntries.length === 0) return alert('Không có dữ liệu trong bộ lọc hiện tại để xuất Excel!');
+    const headers = ["STT", "Ngày", "Nền tảng", "Giờ", "Kênh / Page", "Link", "Lượt xem", "Like", "Comment", "Share", "Inbox"];
+    const rows = filteredEntries.map((e, index) => [
+      (index + 1).toString(),
+      e.date || '',
+      e.platform || '',
+      e.time || '',
+      `"${(e.group || '').replace(/"/g, '""')}"`,
+      `"${(e.link || '').replace(/"/g, '""')}"`,
+      (parseInt(String(e.reach)) || 0).toString(),
+      (parseInt(String(e.likes)) || 0).toString(),
+      (parseInt(String(e.comments)) || 0).toString(),
+      (parseInt(String(e.shares)) || 0).toString(),
+      (parseInt(String(e.inboxCount)) || 0).toString(),
+    ]);
+    const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `Bao_Cao_ContentFlow_${filterType}_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    showToast("📊 Đã xuất file Excel (.csv) thành công!");
+  };
+
+  // Tải file mẫu CSV để người dùng nhập bằng Excel
+  const downloadCSVTemplate = () => {
+    const template = [
+      "Ngày,Nền tảng,Giờ,Kênh / Page,Link,Lượt xem,Like,Comment,Share,Inbox",
+      `2026-10-03,Facebook,12:00,Acc Kevin,https://www.facebook.com/8sync/posts/123456,150,15,3,2,0`,
+      `2026-10-03,Facebook,14:00,8 Sync Dev,https://www.facebook.com/8syncdev/posts/789101,350,25,8,4,2`,
+      `2026-10-03,TikTok,18:00,oj0.8sync,https://www.tiktok.com/@oj0.8sync/video/112233,1200,85,12,6,0`,
+      `2026-10-03,YouTube,20:00,8 Sync Dev,https://youtube.com/shorts/abcdef,500,40,5,1,0`,
+    ].join('\n');
+    const blob = new Blob(["\uFEFF" + template], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", "Mau_Nhap_Bao_Cao_ContentFlow.csv");
+    document.body.appendChild(link);
+    link.click();
+    showToast("📥 Đã tải file mẫu Excel (.csv)!");
+  };
+
+  // Xử lý nội dung file CSV hoặc văn bản copy từ Excel
+  const processCSVText = async (text: string) => {
+    const rawLines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+    if (rawLines.length === 0) return alert('Nội dung file hoặc ô nhập trống!');
+
+    setIsProcessingCSV(true);
+    const parsedEntries: Array<Partial<ReportEntry>> = [];
+
+    try {
+      for (const line of rawLines) {
+        const delimiter = line.includes('\t') ? '\t' : (line.includes(',') ? ',' : (line.includes(';') ? ';' : null));
+
+        if (!delimiter) {
+          // Dòng chứa duy nhất 1 link bài viết
+          if (line.startsWith('http://') || line.startsWith('https://') || line.length > 5) {
+            const platform = detectPlatform(line);
+            parsedEntries.push({
+              date: todayStr,
+              time: getCurrentTime(),
+              platform,
+              link: line,
+              reach: 0,
+              likes: 0,
+              comments: 0,
+              shares: 0,
+              inboxCount: 0,
+              group: platform === 'Facebook' ? 'Acc Kevin' : '8 Sync Dev',
+            });
+          }
+          continue;
+        }
+
+        // Dòng CSV / Excel có nhiều cột
+        const cols = line.split(delimiter).map(c => c.trim().replace(/^["']|["']$/g, ''));
+        const firstCol = cols[0].toLowerCase();
+        if (firstCol.includes('stt') || firstCol.includes('ngày') || firstCol.includes('date') || firstCol.includes('nền')) {
+          continue; // Bỏ qua dòng tiêu đề
+        }
+
+        let offset = 0;
+        if (!isNaN(Number(cols[0])) && cols.length >= 7 && (cols[1].includes('-') || cols[1].includes('/'))) {
+          offset = 1; // Có cột STT ở đầu
+        }
+
+        let date = todayStr;
+        let platform = activeTab;
+        let time = getCurrentTime();
+        let group = 'Acc Kevin';
+        let link = '';
+        let reach = 0;
+        let likes = 0;
+        let comments = 0;
+        let shares = 0;
+        let inboxCount = 0;
+
+        if (cols.length >= offset + 5) {
+          date = cols[offset] || todayStr;
+          platform = cols[offset + 1] || detectPlatform(cols[offset + 4] || '');
+          time = cols[offset + 2] || getCurrentTime();
+          group = cols[offset + 3] || (platform === 'Facebook' ? 'Acc Kevin' : '8 Sync Dev');
+          link = cols[offset + 4] || '';
+          reach = parseInt(cols[offset + 5] || '0') || 0;
+          likes = parseInt(cols[offset + 6] || '0') || 0;
+          comments = parseInt(cols[offset + 7] || '0') || 0;
+          shares = parseInt(cols[offset + 8] || '0') || 0;
+          inboxCount = parseInt(cols[offset + 9] || '0') || 0;
+        } else if (cols.length >= 2) {
+          link = cols[0];
+          reach = parseInt(cols[1] || '0') || 0;
+          platform = detectPlatform(link);
+        }
+
+        if (link) {
+          parsedEntries.push({
+            date,
+            platform,
+            time,
+            group,
+            link,
+            reach,
+            likes,
+            comments,
+            shares,
+            inboxCount,
+          });
+        }
+      }
+
+      if (parsedEntries.length === 0) {
+        return alert('Không tìm thấy dòng dữ liệu bài viết hợp lệ nào!');
+      }
+
+      for (const entry of parsedEntries) {
+        await fetch('/api/reports', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(entry),
+        });
+      }
+
+      setBulkText('');
+      setShowBulk(false);
+      fetchData();
+      showToast(`⚡ Đã nhập thành công ${parsedEntries.length} bài viết từ file Excel/CSV!`);
+    } catch {
+      showToast('❌ Lỗi xử lý dữ liệu file Excel/CSV');
+    } finally {
+      setIsProcessingCSV(false);
     }
-    setBulkText('');
-    setShowBulk(false);
-    fetchData();
-    showToast(`⚡ Đã nhập nhanh ${links.length} báo cáo cùng lúc!`);
+  };
+
+  // Xử lý khi user chọn tải file .csv từ máy tính
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target?.result as string;
+      if (text) {
+        setBulkText(text);
+        processCSVText(text);
+      }
+    };
+    reader.readAsText(file, 'utf-8');
+    if (e.target) e.target.value = '';
   };
 
   const startEdit = (entry: ReportEntry) => {
@@ -692,6 +853,15 @@ export default function Home() {
             </button>
           </div>
           <button 
+            type="button"
+            onClick={exportToCSV}
+            className="bg-teal-600 hover:bg-teal-700 active:scale-95 text-white px-3.5 py-2 rounded-xl font-extrabold transition shadow-md text-xs flex items-center gap-1.5"
+            title="Xuất dữ liệu bảng hiện tại sang file Excel (.csv)"
+          >
+            <span>📊</span>
+            <span>Xuất Excel (.csv)</span>
+          </button>
+          <button 
             onClick={generatePDF} 
             disabled={isExportingPDF}
             className="bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white px-4 py-2 rounded-xl font-extrabold transition shadow-md text-xs flex items-center gap-1.5"
@@ -739,27 +909,70 @@ export default function Home() {
               })}
            </div>
 
-           {/* Bulk Import Quick Panel */}
+           {/* Bulk Import / CSV Import Quick Panel */}
            <button 
              type="button" 
              onClick={() => setShowBulk(!showBulk)} 
-             className={`w-full py-2.5 rounded-xl font-black text-xs transition border-2 border-dashed ${showBulk ? 'bg-amber-50 border-amber-300 text-amber-800' : 'border-slate-300 text-slate-600 hover:border-sky-400 hover:text-sky-600'}`}
+             className={`w-full py-2.5 rounded-xl font-black text-xs transition border-2 border-dashed flex items-center justify-center gap-1.5 ${showBulk ? 'bg-amber-50 border-amber-300 text-amber-800' : 'border-slate-300 text-slate-600 hover:border-sky-400 hover:text-sky-600'}`}
            >
-             ⚡ Nhập Nhanh Nhiều Link Cùng Lúc
+             <span>📊</span>
+             <span>Nhập Bằng File Excel / CSV / Nhiều Link</span>
            </button>
 
            {showBulk && (
-             <div className="bg-amber-50/70 p-4 rounded-xl border border-amber-200 space-y-3">
-               <p className="text-xs font-bold text-amber-800">Dán mỗi link 1 dòng — hệ thống tự nhận diện Facebook / YouTube / TikTok và lưu thành từng báo cáo riêng.</p>
+             <div className="bg-gradient-to-br from-amber-50/90 to-amber-100/50 p-4 rounded-2xl border border-amber-300 shadow-sm space-y-3">
+               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                 <span className="text-xs font-black text-amber-950 uppercase tracking-wide flex items-center gap-1.5">
+                   <span>📊</span> Nhập Báo Cáo Từ Excel / CSV
+                 </span>
+                 <div className="flex items-center gap-2">
+                   <button
+                     type="button"
+                     onClick={downloadCSVTemplate}
+                     className="text-[11px] font-black text-amber-900 bg-white border border-amber-300 hover:bg-amber-50 px-2.5 py-1 rounded-lg transition shadow-2xs flex items-center gap-1"
+                   >
+                     <span>📥</span> Tải File Mẫu
+                   </button>
+                   <label className="text-[11px] font-black text-white bg-amber-700 hover:bg-amber-800 px-2.5 py-1 rounded-lg cursor-pointer transition shadow-2xs flex items-center gap-1">
+                     <span>📁</span> Chọn File .csv
+                     <input
+                       type="file"
+                       accept=".csv,text/csv"
+                       ref={csvFileInputRef}
+                       className="hidden"
+                       onChange={handleFileUpload}
+                     />
+                   </label>
+                 </div>
+               </div>
+
+               <p className="text-[11px] font-semibold text-amber-900 leading-relaxed">
+                 Hỗ trợ: <b>(1)</b> Chọn file <code className="bg-amber-200/60 px-1 py-0.5 rounded font-mono text-[10px]">.csv</code> xuất từ Excel/Google Sheets, hoặc <b>(2)</b> Copy & dán trực tiếp danh sách link (hoặc hàng copy từ Excel) vào ô dưới.
+               </p>
+
                <textarea 
-                 className="w-full border border-amber-200 p-3 rounded-xl text-xs font-semibold h-28 bg-white" 
-                 placeholder={"https://facebook.com/...\nhttps://youtube.com/shorts/...\nhttps://tiktok.com/..."} 
+                 className="w-full border border-amber-300 p-3 rounded-xl text-xs font-semibold h-28 bg-white text-slate-900 placeholder-slate-400 font-mono" 
+                 placeholder={"Cách 1 (dán link đơn giản, mỗi link 1 dòng):\nhttps://facebook.com/8sync/posts/...\nhttps://youtube.com/shorts/...\n\nCách 2 (copy hàng từ Excel/Google Sheets):\n2026-10-03\tFacebook\t12:00\tAcc Kevin\thttps://facebook.com/8sync/posts/123\t150\t12\t3\t1\t0"} 
                  value={bulkText} 
                  onChange={e => setBulkText(e.target.value)} 
                />
+
                <div className="flex gap-2">
-                 <button onClick={handleBulkImport} className="flex-1 bg-amber-600 hover:bg-amber-700 text-white py-2.5 rounded-xl font-black text-xs">Nhập Tất Cả</button>
-                 <button onClick={() => setShowBulk(false)} className="px-4 bg-white border border-amber-200 text-amber-800 py-2.5 rounded-xl font-black text-xs">Đóng</button>
+                 <button 
+                   type="button" 
+                   disabled={isProcessingCSV}
+                   onClick={() => processCSVText(bulkText)} 
+                   className="flex-1 bg-amber-600 hover:bg-amber-700 active:scale-98 text-white py-2.5 rounded-xl font-black text-xs transition shadow-sm disabled:opacity-50"
+                 >
+                   {isProcessingCSV ? 'Đang Xử Lý & Lưu...' : 'Xác Nhận Nhập Dữ Liệu'}
+                 </button>
+                 <button 
+                   type="button" 
+                   onClick={() => setShowBulk(false)} 
+                   className="px-4 bg-white border border-amber-300 text-amber-900 hover:bg-amber-50 py-2.5 rounded-xl font-black text-xs transition"
+                 >
+                   Đóng
+                 </button>
                </div>
              </div>
            )}
