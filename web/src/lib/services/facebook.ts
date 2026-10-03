@@ -13,7 +13,7 @@ export async function fetchFacebookPageData(
   days: number = 1
 ): Promise<FacebookSyncOutput> {
   const pageId = config.fbPageId?.trim() || process.env.FACEBOOK_PAGE_ID?.trim() || '588402817683765';
-  const token = config.fbPageAccessToken?.trim() || process.env.FACEBOOK_PAGE_ACCESS_TOKEN?.trim() || 'EAArhbgXPxmsBSuFi1Xrf99ERwAka4mtXi1iFpwqRHA7ZCJSE4f7ZBrEv91oS81IbqZC6qVzZBBjlJ4PDu4ml4OXdqD2gFcH8qfWxMFzs4brNyFmQKaJIhHqfzZBghth135ZCgxplrtqrS8eZBDHob9ZCPmsyQSDWWKs7bfdjhFFgkrzpMHRYZCBwgsipf9i6PermSjYSZBiLrnrDmEHcyiNDipBmKXnYTjzuGDo3BiKz2c2V4Xw3tq6UOZBeUTgpT2lKS50d4m57GcZAsTAVv2ZBa0O3vKf9tdByrkkvcZAgZDZD';
+  const token = config.fbPageAccessToken?.trim() || process.env.FACEBOOK_PAGE_ACCESS_TOKEN?.trim() || 'EAArhbgXPxmsBSoehVisCY3BqhmtN7I6WcrsZCvwZAJdZCuIOGoRsD7AopcqyiZCubGTmvZCvskm3U4ZArZB3gamVIq0BYZBwOfiWuDTt4VJnANMXuwogqeIia9J1wlxPPIPqoj96GbusmAqA0esxpw0NQ4aP32CSkulWlfwmCU8tA3QxEThgRmvhXLwJO6lA9ZCE2cZAEDy9c2XRJs';
 
   if (!pageId || !token) {
     return {
