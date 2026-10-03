@@ -234,42 +234,41 @@ export default function Plan() {
     <Layout>
       {/* Toast Notification */}
       {toast && (
-        <div className="fixed top-4 right-4 z-50 bg-slate-950 text-white px-5 py-3 rounded-2xl shadow-2xl border border-slate-700 flex items-center gap-3 animate-bounce text-sm font-bold">
-          <span className="text-emerald-400">✨</span>
+        <div className="fixed top-4 right-4 z-50 bg-emerald-900/95 backdrop-blur-md text-white px-5 py-3 rounded-2xl shadow-2xl border border-emerald-700 flex items-center gap-3 animate-bounce text-sm font-bold">
+          <span className="text-emerald-300">✨</span>
           <span>{toast}</span>
         </div>
       )}
 
       {/* HEADER & CONTROLS */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-200">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6 pb-4 border-b border-emerald-100">
         <div>
           <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Kế Hoạch Chiến Lược Tháng</h1>
           <p className="text-slate-500 text-sm mt-1 font-semibold">Nhập chi tiết mục tiêu • Quản lý Form & Bảng Excel / Kanban • Tự động lưu</p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2.5">
           {/* View Switcher: Split vs Grid vs Kanban */}
-          <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200 font-extrabold text-xs">
+          <div className="flex bg-white p-1 rounded-2xl border border-emerald-100 shadow-xs font-extrabold text-xs">
             <button 
               onClick={() => setActiveView('SPLIT')} 
-              className={`px-3.5 py-2 rounded-lg transition flex items-center gap-1.5 ${activeView === 'SPLIT' ? 'bg-sky-600 text-white shadow' : 'text-slate-600 hover:text-slate-900'}`}
+              className={`px-3.5 py-1.5 rounded-xl transition flex items-center gap-1.5 cursor-pointer ${activeView === 'SPLIT' ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-600/20 font-black' : 'text-slate-600 hover:text-emerald-900 hover:bg-emerald-50/60'}`}
             >
               <span>✍️</span> Form & Bảng
             </button>
             <button 
               onClick={() => setActiveView('GRID')} 
-              className={`px-3.5 py-2 rounded-lg transition flex items-center gap-1.5 ${activeView === 'GRID' ? 'bg-sky-600 text-white shadow' : 'text-slate-600 hover:text-slate-900'}`}
+              className={`px-3.5 py-1.5 rounded-xl transition flex items-center gap-1.5 cursor-pointer ${activeView === 'GRID' ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-600/20 font-black' : 'text-slate-600 hover:text-emerald-900 hover:bg-emerald-50/60'}`}
             >
               <span>📊</span> Grid Excel
             </button>
             <button 
               onClick={() => setActiveView('KANBAN')} 
-              className={`px-3.5 py-2 rounded-lg transition flex items-center gap-1.5 ${activeView === 'KANBAN' ? 'bg-sky-600 text-white shadow' : 'text-slate-600 hover:text-slate-900'}`}
+              className={`px-3.5 py-1.5 rounded-xl transition flex items-center gap-1.5 cursor-pointer ${activeView === 'KANBAN' ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-600/20 font-black' : 'text-slate-600 hover:text-emerald-900 hover:bg-emerald-50/60'}`}
             >
               <span>📌</span> Kanban
             </button>
           </div>
-
           {/* Month/Year Selectors */}
           <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-xl border border-slate-200 font-bold text-xs">
             <select 
@@ -322,37 +321,37 @@ export default function Plan() {
 
       {/* DASHBOARD METRICS CARDS */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+        <div className="bg-white p-5 rounded-3xl border border-emerald-100 shadow-2xs flex items-center justify-between">
           <div>
-            <div className="text-xs font-black text-slate-400 uppercase tracking-wider">Tổng Số Mục Tiêu</div>
+            <div className="text-[11px] font-black text-slate-400 uppercase tracking-wider">Tổng Số Mục Tiêu</div>
             <div className="text-3xl font-black text-slate-900 mt-1">{rows.length} <span className="text-xs text-slate-400 font-bold">nhiệm vụ</span></div>
           </div>
-          <div className="w-12 h-12 bg-sky-50 text-sky-600 rounded-2xl flex items-center justify-center font-black text-xl">📋</div>
+          <div className="w-12 h-12 bg-emerald-50 text-emerald-700 rounded-2xl flex items-center justify-center font-black text-xl border border-emerald-100">📋</div>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+        <div className="bg-white p-5 rounded-3xl border border-emerald-200/80 shadow-2xs flex items-center justify-between">
           <div>
-            <div className="text-xs font-black text-slate-400 uppercase tracking-wider">Đã Hoàn Thành</div>
+            <div className="text-[11px] font-black text-emerald-700 uppercase tracking-wider">Đã Hoàn Thành</div>
             <div className="text-3xl font-black text-emerald-600 mt-1">{completedTasks} / {rows.length}</div>
           </div>
-          <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center font-black text-xl">✅</div>
+          <div className="w-12 h-12 bg-emerald-100 text-emerald-800 rounded-2xl flex items-center justify-center font-black text-xl border border-emerald-200">✅</div>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+        <div className="bg-gradient-to-tr from-emerald-50/90 via-white to-teal-50/50 p-5 rounded-3xl border border-emerald-200 shadow-2xs flex items-center justify-between">
           <div>
-            <div className="text-xs font-black text-slate-400 uppercase tracking-wider">Target Reach Tháng</div>
-            <div className="text-2xl font-black text-indigo-600 mt-1">{totalTargetReach.toLocaleString()}</div>
+            <div className="text-[11px] font-black text-emerald-800 uppercase tracking-wider">Target Reach Tháng</div>
+            <div className="text-2xl font-black text-emerald-950 mt-1">{totalTargetReach.toLocaleString()}</div>
           </div>
-          <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center font-black text-xl">🎯</div>
+          <div className="w-12 h-12 bg-emerald-600 text-white rounded-2xl flex items-center justify-center font-black text-xl shadow-md shadow-emerald-600/20">🎯</div>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-center">
+        <div className="bg-white p-5 rounded-3xl border border-emerald-100 shadow-2xs flex flex-col justify-center">
           <div className="flex justify-between items-center mb-1.5">
-            <span className="text-xs font-black text-slate-400 uppercase tracking-wider">Tiến Độ Trung Bình</span>
-            <span className="text-sm font-black text-sky-600">{avgProgress}%</span>
+            <span className="text-[11px] font-black text-slate-400 uppercase tracking-wider">Tiến Độ Trung Bình</span>
+            <span className="text-sm font-black text-emerald-700">{avgProgress}%</span>
           </div>
-          <div className="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
-            <div className="bg-gradient-to-r from-sky-500 to-emerald-500 h-3 rounded-full transition-all duration-500" style={{ width: `${Math.min(100, Math.max(0, avgProgress))}%` }}></div>
+          <div className="w-full bg-emerald-50 rounded-full h-3 overflow-hidden border border-emerald-100/60">
+            <div className="bg-gradient-to-r from-emerald-500 to-teal-600 h-3 rounded-full transition-all duration-500" style={{ width: `${Math.min(100, Math.max(0, avgProgress))}%` }}></div>
           </div>
         </div>
       </div>
@@ -362,8 +361,8 @@ export default function Plan() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           
           {/* FORM NHẬP CHI TIẾT MỤC TIÊU BÊN TRÁI (5 COLS) */}
-          <form onSubmit={handleFormSubmit} className="lg:col-span-5 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+          <form onSubmit={handleFormSubmit} className="lg:col-span-5 bg-white p-6 rounded-3xl border border-emerald-100 shadow-sm shadow-emerald-950/5 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-emerald-100">
               <h2 className="font-black text-base text-slate-900 flex items-center gap-2">
                 <span className="text-lg">✍️</span> 
                 <span>{editingId ? 'Chỉnh Sửa Mục Tiêu' : 'Nhập Chi Tiết Mục Tiêu Mới'}</span>
@@ -474,32 +473,32 @@ export default function Plan() {
 
             <button 
               type="submit" 
-              className="w-full py-3.5 bg-sky-600 hover:bg-sky-700 text-white font-black rounded-xl text-sm shadow-md transition"
+              className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white font-black rounded-2xl text-sm shadow-md shadow-emerald-600/20 transition cursor-pointer"
             >
               {editingId ? 'Cập Nhật Mục Tiêu' : 'Lưu Mục Tiêu Mới'}
             </button>
           </form>
 
           {/* DANH SÁCH BẢNG KẾ HOẠCH BÊN PHẢI (7 COLS) */}
-          <div className="lg:col-span-7 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-            <div className="flex justify-between items-center pb-3 border-b border-slate-100">
+          <div className="lg:col-span-7 bg-white p-6 rounded-3xl border border-emerald-100 shadow-sm shadow-emerald-950/5 space-y-4">
+            <div className="flex justify-between items-center pb-3 border-b border-emerald-100">
               <h2 className="font-black text-base text-slate-900">Danh Sách Mục Tiêu Tháng ({rows.length})</h2>
               <span className="text-xs text-slate-400 font-bold">Bấm nút Sửa để tải lên Form</span>
             </div>
 
             <div className="max-h-[520px] overflow-auto pr-1">
               <table className="w-full min-w-[560px] text-left text-sm">
-                <thead className="sticky top-0 bg-white shadow-sm z-10">
-                  <tr className="border-b border-slate-200 text-slate-500 font-black uppercase text-xs">
-                    <th className="py-2.5 px-1">Hạng mục</th>
-                    <th className="px-1">Nhiệm vụ</th>
-                    <th className="px-1">Target</th>
-                    <th className="px-1 text-center">Tiến độ</th>
-                    <th className="px-1">Trạng thái</th>
-                    <th className="text-right px-1">Hành động</th>
+                <thead className="sticky top-0 bg-emerald-50/90 backdrop-blur-xs shadow-2xs z-10">
+                  <tr className="border-b border-emerald-100 text-emerald-950 font-black uppercase text-[11px]">
+                    <th className="py-2.5 px-2">Hạng mục</th>
+                    <th className="px-2">Nhiệm vụ</th>
+                    <th className="px-2">Target</th>
+                    <th className="px-2 text-center">Tiến độ</th>
+                    <th className="px-2">Trạng thái</th>
+                    <th className="text-right px-2">Hành động</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-emerald-50">
                   {rows.length === 0 ? (
                     <tr>
                       <td colSpan={6} className="py-12 text-center text-slate-400 font-semibold text-sm">
@@ -507,31 +506,31 @@ export default function Plan() {
                       </td>
                     </tr>
                   ) : rows.map(r => (
-                    <tr key={r.id} className="hover:bg-slate-50/80 transition">
-                      <td className="py-3 px-1">
+                    <tr key={r.id} className="border-b border-emerald-50/70 hover:bg-emerald-50/40 transition">
+                      <td className="py-3 px-2">
                         <span className="px-2 py-0.5 rounded text-[11px] font-extrabold bg-slate-100 text-slate-700">
                           {r.category}
                         </span>
                       </td>
-                      <td className="py-3 px-1 font-bold text-slate-900 text-xs">
+                      <td className="py-3 px-2 font-bold text-slate-900 text-xs">
                         {r.task || '--'}
                         {r.note && <p className="text-[11px] text-slate-400 font-medium truncate max-w-[160px]">{r.note}</p>}
                       </td>
-                      <td className="py-3 px-1 font-extrabold text-indigo-600 text-xs">{parseInt(r.targetReach || '0').toLocaleString()}</td>
-                      <td className="py-3 px-1 text-center font-black text-sky-600 text-xs">{r.progress}%</td>
-                      <td className="py-3 px-1">
+                      <td className="py-3 px-2 font-extrabold text-emerald-800 text-xs">{parseInt(r.targetReach || '0').toLocaleString()}</td>
+                      <td className="py-3 px-2 text-center font-black text-emerald-700 text-xs">{r.progress}%</td>
+                      <td className="py-3 px-2">
                         <span className={`px-2 py-0.5 rounded text-[11px] font-black ${
-                          r.status === 'Done' ? 'bg-emerald-100 text-emerald-800' :
-                          r.status === 'In Progress' ? 'bg-sky-100 text-sky-800' :
-                          'bg-amber-100 text-amber-800'
+                          r.status === 'Done' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' :
+                          r.status === 'In Progress' ? 'bg-teal-50 text-teal-800 border border-teal-200' :
+                          'bg-amber-50 text-amber-800 border border-amber-200'
                         }`}>
                           {r.status}
                         </span>
                       </td>
-                      <td className="py-3 px-1 text-right">
+                      <td className="py-3 px-2 text-right">
                         <div className="flex justify-end gap-1">
-                          <button onClick={() => startEdit(r)} className="bg-amber-50 hover:bg-amber-100 text-amber-700 px-2 py-1 rounded font-extrabold text-xs">Sửa</button>
-                          <button onClick={() => deleteRow(r.id)} className="bg-rose-50 hover:bg-rose-100 text-rose-700 px-2 py-1 rounded font-extrabold text-xs">Xóa</button>
+                          <button onClick={() => startEdit(r)} className="bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-200/60 px-2.5 py-1 rounded-lg font-bold text-xs cursor-pointer">Sửa</button>
+                          <button onClick={() => deleteRow(r.id)} className="bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200/60 px-2.5 py-1 rounded-lg font-bold text-xs cursor-pointer">Xóa</button>
                         </div>
                       </td>
                     </tr>

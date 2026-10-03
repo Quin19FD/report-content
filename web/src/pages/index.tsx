@@ -656,56 +656,62 @@ export default function Home() {
     <Layout>
       {/* Toast Notification */}
       {notification && (
-        <div className="fixed top-4 right-4 z-50 bg-slate-950 text-white px-5 py-3 rounded-2xl shadow-2xl border border-slate-700 flex items-center gap-3 animate-bounce text-sm font-bold">
-          <span className="text-emerald-400">✨</span>
+        <div className="fixed top-4 right-4 z-50 bg-emerald-900/95 backdrop-blur-md text-white px-5 py-3 rounded-2xl shadow-2xl border border-emerald-700 flex items-center gap-3 animate-bounce text-sm font-bold">
+          <span className="text-emerald-300">✨</span>
           <span>{notification}</span>
         </div>
       )}
 
       {/* TOP HEADER - MULTI-DATE FILTER CONTROLS */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-200">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6 pb-4 border-b border-emerald-100">
         <div>
-        <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Dashboard Báo Cáo Nội Dung</h1>
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-slate-600 mt-1 font-bold">
-            <span className="text-slate-900">📊 {filteredEntries.length} bài đăng</span>
-            <span>•</span>
-            <span className="text-emerald-600 font-extrabold">📈 {totalReachSum.toLocaleString()} Reach</span>
-            <span>•</span>
-            <span className="text-indigo-600 font-extrabold">💬 {totalInboxSum.toLocaleString()} Tin nhắn ({inboxConversionRate}%)</span>
-            <span>•</span>
-            <span className="text-sky-600 font-extrabold">🚀 {sharedCount} shared</span>
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight flex items-center gap-2.5">
+            <span>Dashboard Báo Cáo Nội Dung</span>
+          </h1>
+          <div className="flex flex-wrap items-center gap-2 mt-2">
+            <span className="bg-white px-3 py-1 rounded-xl border border-emerald-100 font-extrabold text-xs text-slate-800 shadow-2xs">
+              📊 {filteredEntries.length} bài đăng
+            </span>
+            <span className="bg-emerald-50/90 px-3 py-1 rounded-xl border border-emerald-200/80 font-black text-xs text-emerald-800 shadow-2xs">
+              📈 {totalReachSum.toLocaleString()} Reach
+            </span>
+            <span className="bg-teal-50/90 px-3 py-1 rounded-xl border border-teal-200/80 font-black text-xs text-teal-800 shadow-2xs">
+              💬 {totalInboxSum.toLocaleString()} Tin nhắn ({inboxConversionRate}%)
+            </span>
+            <span className="bg-white px-3 py-1 rounded-xl border border-slate-200 font-extrabold text-xs text-slate-700 shadow-2xs">
+              🚀 {sharedCount} shared
+            </span>
           </div>
         </div>
 
         {/* MULTI-DATE FILTER BAR */}
-        <div className="flex flex-wrap items-center gap-2 bg-slate-100 p-2 rounded-2xl border border-slate-200">
-          <div className="flex bg-white rounded-xl p-1 shadow-sm font-extrabold text-xs">
+        <div className="flex flex-wrap items-center gap-2 bg-white p-1.5 rounded-2xl border border-emerald-100 shadow-xs">
+          <div className="flex bg-slate-100/80 rounded-xl p-1 font-extrabold text-xs">
             <button 
               onClick={() => setFilterType('TODAY')} 
-              className={`px-3 py-1.5 rounded-lg transition ${filterType === 'TODAY' ? 'bg-sky-600 text-white shadow' : 'text-slate-600 hover:text-slate-900'}`}
+              className={`px-3 py-1.5 rounded-lg transition ${filterType === 'TODAY' ? 'bg-emerald-600 text-white shadow-sm font-black' : 'text-slate-600 hover:text-emerald-900 hover:bg-emerald-50/60'}`}
             >
               Hôm Nay
             </button>
             <button 
               onClick={() => setFilterType('MONTH')} 
-              className={`px-3 py-1.5 rounded-lg transition ${filterType === 'MONTH' ? 'bg-sky-600 text-white shadow' : 'text-slate-600 hover:text-slate-900'}`}
+              className={`px-3 py-1.5 rounded-lg transition ${filterType === 'MONTH' ? 'bg-emerald-600 text-white shadow-sm font-black' : 'text-slate-600 hover:text-emerald-900 hover:bg-emerald-50/60'}`}
             >
               Theo Tháng
             </button>
             <button 
               onClick={() => setFilterType('YEAR')} 
-              className={`px-3 py-1.5 rounded-lg transition ${filterType === 'YEAR' ? 'bg-sky-600 text-white shadow' : 'text-slate-600 hover:text-slate-900'}`}
+              className={`px-3 py-1.5 rounded-lg transition ${filterType === 'YEAR' ? 'bg-emerald-600 text-white shadow-sm font-black' : 'text-slate-600 hover:text-emerald-900 hover:bg-emerald-50/60'}`}
             >
               Theo Năm
             </button>
             <button 
               onClick={() => setFilterType('ALL')} 
-              className={`px-3 py-1.5 rounded-lg transition ${filterType === 'ALL' ? 'bg-sky-600 text-white shadow' : 'text-slate-600 hover:text-slate-900'}`}
+              className={`px-3 py-1.5 rounded-lg transition ${filterType === 'ALL' ? 'bg-emerald-600 text-white shadow-sm font-black' : 'text-slate-600 hover:text-emerald-900 hover:bg-emerald-50/60'}`}
             >
               Tất Cả
             </button>
           </div>
-
           {/* Sub-selectors depending on FilterType */}
           {filterType === 'TODAY' && (
             <input 
@@ -748,12 +754,12 @@ export default function Home() {
           )}
 
           {/* NÚT ĐỒNG BỘ KÊNH TRÊN TOP TOOLBAR VỚI BỘ CHỌN NGÀY */}
-          <div className="flex items-center gap-1 bg-white p-1 rounded-xl border border-slate-200 ml-auto shadow-sm">
+          <div className="flex items-center gap-1 bg-emerald-50/60 p-1 rounded-xl border border-emerald-200/70 ml-auto shadow-2xs">
             <select
               value={syncDays}
               onChange={e => setSyncDays(Number(e.target.value))}
               disabled={isSyncing}
-              className="bg-slate-50 border-0 py-1.5 px-2 rounded-lg text-xs font-black text-slate-800 outline-none cursor-pointer"
+              className="bg-transparent border-0 py-1.5 px-2 rounded-lg text-xs font-black text-emerald-950 outline-none cursor-pointer"
             >
               <option value={1}>⚡ Quét hôm nay</option>
               <option value={7}>⚡ Quét 7 ngày qua</option>
@@ -764,7 +770,7 @@ export default function Home() {
               type="button"
               disabled={isSyncing}
               onClick={() => triggerManualSync(syncDays)}
-              className={`px-3 py-1.5 rounded-lg font-black transition text-xs flex items-center gap-1.5 ${isSyncing ? 'bg-indigo-400 text-white cursor-wait' : 'bg-indigo-600 hover:bg-indigo-700 text-white active:scale-95'}`}
+              className={`px-3 py-1.5 rounded-lg font-black transition text-xs flex items-center gap-1.5 ${isSyncing ? 'bg-emerald-400 text-white cursor-wait' : 'bg-emerald-600 hover:bg-emerald-700 text-white active:scale-95 shadow-sm shadow-emerald-600/20'}`}
               title="Đảm bảo chống trùng bài: bài cũ chỉ cập nhật số view/like mới nhất"
             >
               {isSyncing ? (
@@ -799,66 +805,64 @@ export default function Home() {
 
       {/* SIDE-BY-SIDE DUAL WORKSPACE */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        
         {/* LEFT WORKSPACE: FORM INPUT */}
-        <div className="lg:col-span-5 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-           <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div className="lg:col-span-5 bg-white p-6 rounded-3xl border border-emerald-100 shadow-sm shadow-emerald-950/5 space-y-4">
+           <div className="flex items-center justify-between pb-3 border-b border-emerald-100">
              <h2 className="font-black text-base text-slate-900 flex items-center gap-2">
                <span className="text-lg">✍️</span> 
                <span>{editingId ? 'Chỉnh Sửa Báo Cáo' : 'Nhập Báo Cáo Mới'}</span>
              </h2>
              {editingId && (
-               <button onClick={() => setEditingId(null)} className="text-xs text-slate-500 hover:text-slate-800 underline font-bold">
+               <button onClick={() => setEditingId(null)} className="text-xs text-slate-500 hover:text-slate-800 underline font-bold cursor-pointer">
                  Hủy
                </button>
              )}
            </div>
 
            {/* Input Tab selector */}
-           <div className="flex gap-1.5 p-1.5 bg-slate-100 rounded-xl text-sm font-extrabold">
+           <div className="flex gap-1.5 p-1.5 bg-emerald-50/60 border border-emerald-100 rounded-2xl text-xs font-extrabold">
               {tabs.map(t => {
                 let activeColor = 'bg-sky-600 text-white shadow-sm';
                 if (t === 'YouTube') activeColor = 'bg-red-600 text-white shadow-sm';
-                if (t === 'TikTok') activeColor = 'bg-slate-950 text-white shadow-sm';
+                if (t === 'TikTok') activeColor = 'bg-emerald-800 text-white shadow-sm';
 
                 return (
                   <button 
                     key={t} 
-                    type="button"
+                    type="button" 
                     onClick={() => setActiveTab(t)} 
-                    className={`flex-1 py-2 rounded-lg transition ${activeTab === t ? activeColor : 'text-slate-600 hover:text-slate-900'}`}
+                    className={`flex-1 py-2 rounded-xl transition ${activeTab === t ? activeColor : 'text-slate-600 hover:text-emerald-900 hover:bg-white/80'}`}
                   >
-                    {t === 'YouTube' ? '🎬 YT' : t === 'Facebook' ? '📘 FB' : '🎵 TT'}
+                    {t === 'YouTube' ? '🎬 YouTube' : t === 'Facebook' ? '📘 Facebook' : '🎵 TikTok'}
                   </button>
                 );
               })}
            </div>
-
            {/* Bulk Import / CSV Import Quick Panel */}
            <button 
              type="button" 
              onClick={() => setShowBulk(!showBulk)} 
-             className={`w-full py-2.5 rounded-xl font-black text-xs transition border-2 border-dashed flex items-center justify-center gap-1.5 ${showBulk ? 'bg-amber-50 border-amber-300 text-amber-800' : 'border-slate-300 text-slate-600 hover:border-sky-400 hover:text-sky-600'}`}
+             className={`w-full py-2.5 rounded-xl font-extrabold text-xs transition border-2 border-dashed flex items-center justify-center gap-1.5 ${showBulk ? 'bg-emerald-50 border-emerald-300 text-emerald-800' : 'border-emerald-200/90 text-emerald-800 bg-emerald-50/40 hover:bg-emerald-100/60 hover:border-emerald-400'}`}
            >
              <span>📊</span>
              <span>Nhập Bằng File Excel / CSV / Nhiều Link</span>
            </button>
 
            {showBulk && (
-             <div className="bg-gradient-to-br from-amber-50/90 to-amber-100/50 p-4 rounded-2xl border border-amber-300 shadow-sm space-y-3">
+             <div className="bg-gradient-to-br from-emerald-50/90 via-white to-teal-50/50 p-4 rounded-2xl border border-emerald-200 shadow-xs space-y-3">
                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                 <span className="text-xs font-black text-amber-950 uppercase tracking-wide flex items-center gap-1.5">
+                 <span className="text-xs font-black text-emerald-950 uppercase tracking-wide flex items-center gap-1.5">
                    <span>📊</span> Nhập Báo Cáo Từ Excel / CSV
                  </span>
                  <div className="flex items-center gap-2">
                    <button
                      type="button"
                      onClick={downloadCSVTemplate}
-                     className="text-[11px] font-black text-amber-900 bg-white border border-amber-300 hover:bg-amber-50 px-2.5 py-1 rounded-lg transition shadow-2xs flex items-center gap-1"
+                     className="text-[11px] font-black text-emerald-900 bg-white border border-emerald-200 hover:bg-emerald-50 px-2.5 py-1 rounded-lg transition shadow-2xs flex items-center gap-1 cursor-pointer"
                    >
                      <span>📥</span> Tải File Mẫu
                    </button>
-                   <label className="text-[11px] font-black text-white bg-amber-700 hover:bg-amber-800 px-2.5 py-1 rounded-lg cursor-pointer transition shadow-2xs flex items-center gap-1">
+                   <label className="text-[11px] font-black text-white bg-emerald-700 hover:bg-emerald-800 px-2.5 py-1 rounded-lg cursor-pointer transition shadow-2xs flex items-center gap-1">
                      <span>📁</span> Chọn File .csv
                      <input
                        type="file"
@@ -871,12 +875,12 @@ export default function Home() {
                  </div>
                </div>
 
-               <p className="text-[11px] font-semibold text-amber-900 leading-relaxed">
-                 Hỗ trợ: <b>(1)</b> Chọn file <code className="bg-amber-200/60 px-1 py-0.5 rounded font-mono text-[10px]">.csv</code> xuất từ Excel/Google Sheets, hoặc <b>(2)</b> Copy & dán trực tiếp danh sách link (hoặc hàng copy từ Excel) vào ô dưới.
+               <p className="text-[11px] font-semibold text-emerald-900 leading-relaxed">
+                 Hỗ trợ: <b>(1)</b> Chọn file <code className="bg-emerald-100/80 px-1 py-0.5 rounded font-mono text-[10px]">.csv</code> xuất từ Excel/Google Sheets, hoặc <b>(2)</b> Copy & dán trực tiếp danh sách link (hoặc hàng copy từ Excel) vào ô dưới.
                </p>
 
                <textarea 
-                 className="w-full border border-amber-300 p-3 rounded-xl text-xs font-semibold h-28 bg-white text-slate-900 placeholder-slate-400 font-mono" 
+                 className="w-full border border-emerald-200 p-3 rounded-xl text-xs font-semibold h-28 bg-white text-slate-900 placeholder-slate-400 font-mono focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none" 
                  placeholder={"Cách 1 (dán link đơn giản, mỗi link 1 dòng):\nhttps://facebook.com/8sync/posts/...\nhttps://youtube.com/shorts/...\n\nCách 2 (copy hàng từ Excel/Google Sheets):\n2026-10-03\tFacebook\t12:00\tAcc Kevin\thttps://facebook.com/8sync/posts/123\t150\t12\t3\t1\t0"} 
                  value={bulkText} 
                  onChange={e => setBulkText(e.target.value)} 
@@ -887,14 +891,14 @@ export default function Home() {
                    type="button" 
                    disabled={isProcessingCSV}
                    onClick={() => processCSVText(bulkText)} 
-                   className="flex-1 bg-amber-600 hover:bg-amber-700 active:scale-98 text-white py-2.5 rounded-xl font-black text-xs transition shadow-sm disabled:opacity-50"
+                   className="flex-1 bg-emerald-600 hover:bg-emerald-700 active:scale-98 text-white py-2.5 rounded-xl font-black text-xs transition shadow-sm shadow-emerald-600/20 disabled:opacity-50 cursor-pointer"
                  >
                    {isProcessingCSV ? 'Đang Xử Lý & Lưu...' : 'Xác Nhận Nhập Dữ Liệu'}
                  </button>
                  <button 
                    type="button" 
                    onClick={() => setShowBulk(false)} 
-                   className="px-4 bg-white border border-amber-300 text-amber-900 hover:bg-amber-50 py-2.5 rounded-xl font-black text-xs transition"
+                   className="px-4 bg-white border border-emerald-200 text-emerald-900 hover:bg-emerald-50 py-2.5 rounded-xl font-black text-xs transition cursor-pointer"
                  >
                    Đóng
                  </button>
@@ -1043,20 +1047,20 @@ export default function Home() {
             </div>
 
             {/* Customer Inbound Messages Input */}
-            <div className="bg-indigo-50/60 p-3 rounded-xl border border-indigo-100">
+            <div className="bg-emerald-50/60 p-3 rounded-2xl border border-emerald-200/70">
               <div className="flex justify-between items-center mb-1.5">
-                <label className="block text-xs font-black text-indigo-900 uppercase tracking-wide">
+                <label className="block text-xs font-black text-emerald-900 uppercase tracking-wide">
                   💬 Số Tin Nhắn Khách (Inbox từ bài viết / Reel)
                 </label>
-                <span className="text-[10px] font-extrabold text-indigo-700 bg-white px-2 py-0.5 rounded-full border border-indigo-200">
+                <span className="text-[10px] font-extrabold text-emerald-800 bg-white px-2 py-0.5 rounded-full border border-emerald-200">
                   Tỷ lệ: {parseInt(form.reach) > 0 ? (((parseInt(form.inboxCount) || 0) / parseInt(form.reach)) * 100).toFixed(2) : 0}% / reach
                 </span>
               </div>
               <div className="flex items-center gap-2">
                 <input 
-                  type="number"
-                  min="0"
-                  className="w-full border border-indigo-200 bg-white p-2.5 rounded-xl text-sm font-black text-indigo-950 focus:ring-2 focus:ring-indigo-500" 
+                  type="number" 
+                  min="0" 
+                  className="w-full border border-emerald-200 bg-white p-2.5 rounded-xl text-sm font-black text-emerald-950 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none" 
                   placeholder="0 tin nhắn..." 
                   value={form.inboxCount} 
                   onChange={e => setForm({...form, inboxCount: e.target.value})} 
@@ -1067,7 +1071,7 @@ export default function Home() {
                       key={amt} 
                       type="button" 
                       onClick={() => setForm(prev => ({ ...prev, inboxCount: ((parseInt(prev.inboxCount) || 0) + amt).toString() }))} 
-                      className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2.5 rounded-xl text-xs font-black shadow-sm transition"
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2.5 rounded-xl text-xs font-black shadow-sm transition cursor-pointer"
                     >
                       +{amt}
                     </button>
@@ -1180,40 +1184,42 @@ export default function Home() {
             </button>
           </div>
            <button 
-             type="button"
+             type="button" 
              onClick={handleSubmit} 
-             className={`w-full py-3.5 rounded-xl font-black text-white transition text-sm shadow-md ${activeTab === 'YouTube' ? 'bg-red-600 hover:bg-red-700' : 'bg-slate-950 hover:bg-slate-800'}`}
+             className={`w-full py-3.5 rounded-2xl font-black text-white transition text-sm shadow-md cursor-pointer active:scale-[0.99] ${activeTab === 'YouTube' ? 'bg-red-600 hover:bg-red-700 shadow-red-600/20' : activeTab === 'TikTok' ? 'bg-emerald-800 hover:bg-emerald-900 shadow-emerald-800/20' : 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/25'}`}
            >
              {editingId ? 'Cập Nhật Báo Cáo' : `Lưu Báo Cáo ${activeTab}`}
            </button>
         </div>
 
         {/* RIGHT WORKSPACE: DUAL-TABBED DISPLAY */}
-        <div className="lg:col-span-7 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+        <div className="lg:col-span-7 bg-white p-6 rounded-3xl border border-emerald-100 shadow-sm shadow-emerald-950/5 space-y-4">
            
            {/* Right Panel Main Tabs */}
-           <div className="flex flex-wrap gap-2 justify-between items-center border-b border-slate-100 pb-3">
-              <button 
-                type="button"
-                onClick={() => setRightTab('REPORTS')} 
-                className={`px-4 py-2.5 rounded-xl font-black text-xs transition ${rightTab === 'REPORTS' ? 'bg-slate-900 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:text-slate-900'}`}
-              >
-                📊 Báo Cáo ({filteredEntries.length})
-              </button>
-              <button 
-                type="button"
-                onClick={() => setRightTab('MANAGEMENT')} 
-                className={`px-4 py-2.5 rounded-xl font-black text-xs transition flex items-center gap-1.5 ${rightTab === 'MANAGEMENT' ? 'bg-slate-900 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:text-slate-900'}`}
-              >
-                <span>⚡ Quản Lý & Đồng Bộ Kênh</span>
-                {channelConfigs.length > 0 && (
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                )}
-              </button>
+           <div className="flex flex-wrap gap-2 justify-between items-center border-b border-emerald-100 pb-3">
+             <div className="flex items-center gap-1.5 bg-emerald-50/60 p-1 rounded-2xl border border-emerald-100">
+               <button 
+                 type="button" 
+                 onClick={() => setRightTab('REPORTS')} 
+                 className={`px-4 py-2 rounded-xl font-black text-xs transition cursor-pointer ${rightTab === 'REPORTS' ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-600/20' : 'text-slate-600 hover:text-emerald-900 hover:bg-white/80'}`}
+               >
+                 📊 Báo Cáo ({filteredEntries.length})
+               </button>
+               <button 
+                 type="button" 
+                 onClick={() => setRightTab('MANAGEMENT')} 
+                 className={`px-4 py-2 rounded-xl font-black text-xs transition flex items-center gap-1.5 cursor-pointer ${rightTab === 'MANAGEMENT' ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-600/20' : 'text-slate-600 hover:text-emerald-900 hover:bg-white/80'}`}
+               >
+                 <span>⚡ Quản Lý & Đồng Bộ Kênh</span>
+                 {channelConfigs.length > 0 && (
+                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                 )}
+               </button>
+             </div>
             {rightTab === 'REPORTS' && (
               <input 
-                className="border border-slate-200 px-3.5 py-2 rounded-xl text-xs font-bold w-full sm:w-44 focus:ring-2 focus:ring-sky-500" 
-                placeholder="🔍 Tìm kiếm..." 
+                className="border border-slate-200 bg-slate-50/60 focus:bg-white px-3.5 py-2 rounded-xl text-xs font-bold w-full sm:w-48 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none" 
+                placeholder="🔍 Tìm kiếm bài viết..." 
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
               />
@@ -1224,39 +1230,38 @@ export default function Home() {
            {rightTab === 'REPORTS' && (
              <div>
                {/* List Platform Filter Pills */}
-               <div className="flex gap-1.5 mb-3 p-1.5 bg-slate-100 rounded-xl text-xs font-extrabold">
-                 {[
-                   { id: 'ALL', label: 'Tất Cả', count: entries.length },
-                   { id: 'Facebook', label: 'Facebook', count: entries.filter(e => e.platform === 'Facebook').length },
-                   { id: 'YouTube', label: 'YouTube', count: entries.filter(e => e.platform === 'YouTube').length },
-                   { id: 'TikTok', label: 'TikTok', count: entries.filter(e => e.platform === 'TikTok').length },
-                 ].map(t => (
-                  <button
-                    key={t.id}
-                    type="button"
-                    onClick={() => setFilterPlatform(t.id)}
-                    className={`flex-1 py-1.5 rounded-lg transition ${filterPlatform === t.id ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600'}`}
-                  >
-                    {t.label} ({t.count})
-                  </button>
-                ))}
+              <div className="flex gap-1.5 mb-3 p-1.5 bg-emerald-50/60 border border-emerald-100 rounded-2xl text-xs font-extrabold">
+                {[
+                  { id: 'ALL', label: 'Tất Cả', count: entries.length },
+                  { id: 'Facebook', label: 'Facebook', count: entries.filter(e => e.platform === 'Facebook').length },
+                  { id: 'YouTube', label: 'YouTube', count: entries.filter(e => e.platform === 'YouTube').length },
+                  { id: 'TikTok', label: 'TikTok', count: entries.filter(e => e.platform === 'TikTok').length },
+                ].map(t => (
+                 <button
+                   key={t.id}
+                   type="button"
+                   onClick={() => setFilterPlatform(t.id)}
+                   className={`flex-1 py-1.5 rounded-xl transition cursor-pointer ${filterPlatform === t.id ? 'bg-white text-emerald-950 font-black shadow-2xs' : 'text-slate-600 hover:text-emerald-900'}`}
+                 >
+                   {t.label} ({t.count})
+                 </button>
+               ))}
               </div>
-
                <div className="max-h-[460px] overflow-auto pr-1">
                  <table className="w-full min-w-[680px] text-left text-sm">
-                     <thead className="sticky top-0 bg-white shadow-sm z-10">
-                      <tr className="border-b border-slate-200 text-slate-500 font-black uppercase text-xs">
-                        <th className="py-2.5 px-1">Ngày</th>
-                        <th className="px-1">Nền</th>
-                        <th className="px-1">Giờ</th>
-                        <th className="px-1">Kênh/Page</th>
-                        <th className="px-1">Link</th>
-                        <th className="px-1 text-center">👁️ Lượt xem</th>
-                        <th className="px-1 text-center">❤️ Like</th>
-                        <th className="px-1 text-center">💬 Comment</th>
-                        <th className="px-1 text-center">↗️ Share</th>
-                        <th className="px-1 text-center">📥 Inbox</th>
-                        <th className="text-right px-1">Hành động</th>
+                     <thead className="sticky top-0 bg-emerald-50/90 backdrop-blur-xs shadow-2xs z-10">
+                      <tr className="border-b border-emerald-100 text-emerald-950 font-black uppercase text-[11px] tracking-wide">
+                        <th className="py-2.5 px-2">Ngày</th>
+                        <th className="px-2">Nền</th>
+                        <th className="px-2">Giờ</th>
+                        <th className="px-2">Kênh/Page</th>
+                        <th className="px-2">Link</th>
+                        <th className="px-2 text-center">👁️ Lượt xem</th>
+                        <th className="px-2 text-center">❤️ Like</th>
+                        <th className="px-2 text-center">💬 Comment</th>
+                        <th className="px-2 text-center">↗️ Share</th>
+                        <th className="px-2 text-center">📥 Inbox</th>
+                        <th className="text-right px-2">Hành động</th>
                       </tr>
                      </thead>
                      <tbody>
@@ -1267,18 +1272,18 @@ export default function Home() {
                           </td>
                         </tr>
                        ) : filteredEntries.map(e => (
-                        <tr key={e.id} className="border-b border-slate-100 hover:bg-slate-50/80 transition">
-                            <td className="py-3 px-1 font-bold text-slate-500 text-xs">{e.date || '--'}</td>
-                            <td className="py-3 px-1 font-bold">
-                              <span className={`px-2 py-0.5 rounded text-[11px] font-extrabold ${e.platform === 'YouTube' ? 'bg-red-100 text-red-700' : e.platform === 'Facebook' ? 'bg-sky-100 text-sky-700' : 'bg-slate-950 text-white'}`}>
+                        <tr key={e.id} className="border-b border-emerald-50/70 hover:bg-emerald-50/40 transition">
+                            <td className="py-3 px-2 font-bold text-slate-500 text-xs">{e.date || '--'}</td>
+                            <td className="py-3 px-2 font-bold">
+                              <span className={`px-2 py-0.5 rounded-md text-[10px] font-extrabold ${e.platform === 'YouTube' ? 'bg-red-50 text-red-700 border border-red-200/60' : e.platform === 'Facebook' ? 'bg-sky-50 text-sky-700 border border-sky-200/60' : 'bg-emerald-800 text-white'}`}>
                                 {e.platform}
                               </span>
                             </td>
-                            <td className="py-3 px-1 font-bold text-slate-800 text-xs">{e.time || '--:--'}</td>
-                            <td className="py-3 px-1 font-semibold text-slate-700 truncate max-w-[110px] text-xs" title={e.group || '--'}>{e.group || '--'}</td>
-                            <td className="py-3 px-1">
+                            <td className="py-3 px-2 font-bold text-slate-800 text-xs">{e.time || '--:--'}</td>
+                            <td className="py-3 px-2 font-semibold text-slate-700 truncate max-w-[110px] text-xs" title={e.group || '--'}>{e.group || '--'}</td>
+                            <td className="py-3 px-2">
                               {e.link ? (
-                                <a href={e.link.startsWith('http') ? e.link : `https://${e.link}`} target="_blank" rel="noopener noreferrer" className="text-sky-600 font-extrabold hover:underline bg-sky-50 px-2 py-0.5 rounded text-xs">
+                                <a href={e.link.startsWith('http') ? e.link : `https://${e.link}`} target="_blank" rel="noopener noreferrer" className="text-emerald-700 font-extrabold hover:underline bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/60 px-2 py-0.5 rounded-lg text-xs">
                                   Mở ↗
                                 </a>
                               ) : (
@@ -1344,9 +1349,9 @@ export default function Home() {
                             {/* Actions */}
                             <td className="py-3 px-1 text-right">
                               <div className="flex justify-end gap-1">
-                                <button onClick={() => cloneEntry(e)} title="Nhân bản báo cáo" className="bg-sky-50 hover:bg-sky-100 text-sky-700 px-2 py-1 rounded font-extrabold text-xs">⧉</button>
-                                <button onClick={() => startEdit(e)} className="bg-amber-50 hover:bg-amber-100 text-amber-700 px-2 py-1 rounded font-extrabold text-xs">Sửa</button>
-                                {isAdmin && <button onClick={() => handleDelete(e.id)} className="bg-rose-50 hover:bg-rose-100 text-rose-700 px-2 py-1 rounded font-extrabold text-xs">Xóa</button>}
+                                <button onClick={() => cloneEntry(e)} title="Nhân bản báo cáo" className="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200/60 px-2 py-1 rounded-lg font-bold text-xs cursor-pointer">⧉</button>
+                                <button onClick={() => startEdit(e)} className="bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-200/60 px-2 py-1 rounded-lg font-bold text-xs cursor-pointer">Sửa</button>
+                                {isAdmin && <button onClick={() => handleDelete(e.id)} className="bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200/60 px-2 py-1 rounded-lg font-bold text-xs cursor-pointer">Xóa</button>}
                               </div>
                             </td>
                         </tr>
@@ -1360,13 +1365,13 @@ export default function Home() {
            {rightTab === 'MANAGEMENT' && (
              <div className="space-y-5 max-h-[460px] overflow-y-auto pr-1">
               {/* AUTO-SYNC ENGINE CONTROLS & API TOKENS */}
-              <div className="bg-gradient-to-br from-indigo-950 via-slate-900 to-slate-950 p-5 rounded-2xl border border-indigo-500/30 text-white shadow-xl space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-indigo-500/20">
+              <div className="bg-gradient-to-br from-emerald-50/80 via-white to-teal-50/50 p-5 rounded-3xl border border-emerald-200/80 text-slate-800 shadow-xs space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-emerald-100">
                   <div>
-                    <h3 className="font-black text-sm text-indigo-300 flex items-center gap-2">
+                    <h3 className="font-black text-sm text-emerald-950 flex items-center gap-2">
                       <span className="text-base">⚡</span> Tự Động Hóa Đồng Bộ Kênh (Studio Auto-Sync)
                     </h3>
-                    <p className="text-[11px] text-slate-400 font-semibold mt-0.5">
+                    <p className="text-[11px] text-slate-500 font-semibold mt-0.5">
                       Tự động quét bài đăng mới, lượt Reach, Views và số Tin nhắn khách mỗi đêm (00:05)
                     </p>
                   </div>
@@ -1382,7 +1387,7 @@ export default function Home() {
                         type="button"
                         disabled={isSyncing}
                         onClick={() => triggerManualSync(opt.d)}
-                        className={`px-3 py-2 rounded-xl font-black text-xs transition flex items-center gap-1 shadow-md ${isSyncing ? 'bg-indigo-400/40 cursor-wait text-indigo-200' : opt.d === 7 ? 'bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-white' : 'bg-slate-800 hover:bg-slate-700 text-slate-200'}`}
+                        className={`px-3 py-1.5 rounded-xl font-bold text-xs transition flex items-center gap-1 shadow-2xs cursor-pointer ${isSyncing ? 'bg-emerald-100 text-emerald-400 cursor-wait' : opt.d === 7 ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/20' : 'bg-white hover:bg-emerald-50 text-emerald-900 border border-emerald-200'}`}
                       >
                         <span>⚡</span>
                         <span>{opt.label}</span>
@@ -1392,7 +1397,7 @@ export default function Home() {
                       type="button"
                       disabled={isSyncing}
                       onClick={handleClearAllReports}
-                      className="px-3 py-2 rounded-xl font-black text-xs transition flex items-center gap-1 shadow-md bg-rose-950/80 hover:bg-rose-900 border border-rose-800/60 text-rose-300 active:scale-95 disabled:opacity-50"
+                      className="px-3 py-1.5 rounded-xl font-bold text-xs transition flex items-center gap-1 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 active:scale-95 disabled:opacity-50 cursor-pointer shadow-2xs"
                       title="Xóa toàn bộ bài đăng để đồng bộ lại từ đầu (thông tin Fanpage và cấu hình kênh vẫn giữ nguyên)"
                     >
                       <span>🗑️</span>
@@ -1403,14 +1408,14 @@ export default function Home() {
 
                 {/* Kết quả đồng bộ gần nhất nếu có */}
                 {lastSyncResult && (
-                  <div className="p-3 rounded-xl bg-indigo-950/60 border border-indigo-500/30 text-xs space-y-1.5">
-                    <div className="flex items-center justify-between font-extrabold text-indigo-300">
+                  <div className="p-3.5 rounded-2xl bg-white border border-emerald-200 text-xs space-y-2 shadow-2xs">
+                    <div className="flex items-center justify-between font-extrabold text-emerald-900">
                       <span>✓ Đã quét xong: {lastSyncResult.totalSyncedPosts} bài viết/video mới & cập nhật</span>
                       <span className="text-[10px] text-slate-400 font-medium">{new Date(lastSyncResult.timestamp).toLocaleTimeString('vi-VN')}</span>
                     </div>
                     <div className="flex flex-wrap gap-2 text-[11px]">
                       {lastSyncResult.channels.map((c, i) => (
-                        <span key={i} className={`px-2 py-0.5 rounded font-bold ${c.status === 'SUCCESS' ? 'bg-emerald-950 text-emerald-300 border border-emerald-800' : c.status === 'ERROR' ? 'bg-rose-950 text-rose-300 border border-rose-800' : 'bg-slate-800 text-slate-300'}`}>
+                        <span key={i} className={`px-2 py-0.5 rounded-md font-bold ${c.status === 'SUCCESS' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : c.status === 'ERROR' ? 'bg-rose-50 text-rose-700 border border-rose-200' : 'bg-slate-100 text-slate-600'}`}>
                           {c.channelName}: {c.syncedCount} bài {c.inboxCount ? `| 💬 ${c.inboxCount} inbox` : ''}
                         </span>
                       ))}
@@ -1419,22 +1424,22 @@ export default function Home() {
                 )}
 
                 {/* Danh sách Kênh & Cấu hình Token */}
-                <div className="space-y-2">
-                  <span className="text-xs font-black text-slate-300 uppercase tracking-wider block">
+                <div className="space-y-2.5">
+                  <span className="text-xs font-black text-slate-600 uppercase tracking-wider block">
                     Cấu Hình API Token Từng Kênh:
                   </span>
                   <div className="grid grid-cols-1 gap-2.5">
                     {channelConfigs.map((cfg) => {
                       const isEditing = editingConfigId === cfg.id;
                       return (
-                        <div key={cfg.id} className="p-3 rounded-xl bg-slate-900/90 border border-slate-800 space-y-2 text-xs">
+                        <div key={cfg.id} className="p-4 rounded-2xl bg-white border border-emerald-100 shadow-2xs space-y-2.5 text-xs hover:border-emerald-200 transition">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
-                              <span className={`px-2 py-0.5 rounded text-[10px] font-black ${cfg.platform === 'Facebook' ? 'bg-sky-500/20 text-sky-400' : cfg.platform === 'YouTube' ? 'bg-red-500/20 text-red-400' : 'bg-slate-800 text-slate-300'}`}>
+                              <span className={`px-2 py-0.5 rounded text-[10px] font-black ${cfg.platform === 'Facebook' ? 'bg-sky-50 text-sky-700 border border-sky-200/60' : cfg.platform === 'YouTube' ? 'bg-red-50 text-red-700 border border-red-200/60' : 'bg-emerald-50 text-emerald-800 border border-emerald-200/60'}`}>
                                 {cfg.platform}
                               </span>
-                              <span className="font-extrabold text-white text-xs">{cfg.channelName}</span>
-                              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${cfg.lastSyncStatus === 'SUCCESS' ? 'text-emerald-400 bg-emerald-950/60' : cfg.lastSyncStatus === 'ERROR' ? 'text-rose-400 bg-rose-950/60' : 'text-slate-400'}`}>
+                              <span className="font-extrabold text-slate-900 text-xs">{cfg.channelName}</span>
+                              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${cfg.lastSyncStatus === 'SUCCESS' ? 'text-emerald-700 bg-emerald-50 border border-emerald-200/60' : cfg.lastSyncStatus === 'ERROR' ? 'text-rose-700 bg-rose-50 border border-rose-200/60' : 'text-slate-500 bg-slate-100'}`}>
                                 {cfg.lastSyncStatus === 'SUCCESS' ? '● Hoạt động' : cfg.lastSyncStatus === 'ERROR' ? '● Lỗi' : '○ Sẵn sàng'}
                               </span>
                             </div>
@@ -1457,7 +1462,7 @@ export default function Home() {
                                   });
                                 }
                               }}
-                              className="text-xs text-sky-400 font-extrabold hover:underline"
+                              className="text-xs text-emerald-700 font-extrabold hover:underline cursor-pointer"
                             >
                               {isEditing ? 'Đóng ✕' : '⚙️ Cấu hình Token'}
                             </button>
@@ -1465,23 +1470,23 @@ export default function Home() {
 
                           {/* Form sửa Token nếu đang bấm mở */}
                           {isEditing && (
-                            <div className="pt-2 border-t border-slate-800 space-y-2">
+                            <div className="pt-3 border-t border-emerald-100 space-y-2.5 bg-emerald-50/40 p-3 rounded-xl">
                               {cfg.platform === 'Facebook' && (
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                   <div>
-                                    <label className="text-[10px] text-slate-400 font-bold block mb-1">Facebook Page ID:</label>
+                                    <label className="text-[10px] text-slate-600 font-bold block mb-1">Facebook Page ID:</label>
                                     <input
-                                      className="w-full bg-slate-950 border border-slate-700 p-2 rounded-lg text-white font-mono text-xs"
-                                      placeholder="VD: 104829104859..."
+                                      className="w-full bg-white border border-slate-200 p-2 rounded-lg text-slate-900 font-mono text-xs focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none"
+                                      placeholder="VD: 588402817683765..."
                                       value={configForm.fbPageId}
                                       onChange={e => setConfigForm({ ...configForm, fbPageId: e.target.value })}
                                     />
                                   </div>
                                   <div>
-                                    <label className="text-[10px] text-slate-400 font-bold block mb-1">Page Access Token:</label>
+                                    <label className="text-[10px] text-slate-600 font-bold block mb-1">Page Access Token:</label>
                                     <input
                                       type="password"
-                                      className="w-full bg-slate-950 border border-slate-700 p-2 rounded-lg text-white font-mono text-xs"
+                                      className="w-full bg-white border border-slate-200 p-2 rounded-lg text-slate-900 font-mono text-xs focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none"
                                       placeholder="EAAG..."
                                       value={configForm.fbPageAccessToken}
                                       onChange={e => setConfigForm({ ...configForm, fbPageAccessToken: e.target.value })}
@@ -1493,19 +1498,19 @@ export default function Home() {
                               {cfg.platform === 'YouTube' && (
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                   <div>
-                                    <label className="text-[10px] text-slate-400 font-bold block mb-1">YouTube Channel ID:</label>
+                                    <label className="text-[10px] text-slate-600 font-bold block mb-1">YouTube Channel ID:</label>
                                     <input
-                                      className="w-full bg-slate-950 border border-slate-700 p-2 rounded-lg text-white font-mono text-xs"
+                                      className="w-full bg-white border border-slate-200 p-2 rounded-lg text-slate-900 font-mono text-xs focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none"
                                       placeholder="UC..."
                                       value={configForm.ytChannelId}
                                       onChange={e => setConfigForm({ ...configForm, ytChannelId: e.target.value })}
                                     />
                                   </div>
                                   <div>
-                                    <label className="text-[10px] text-slate-400 font-bold block mb-1">YouTube API Key:</label>
+                                    <label className="text-[10px] text-slate-600 font-bold block mb-1">YouTube API Key:</label>
                                     <input
                                       type="password"
-                                      className="w-full bg-slate-950 border border-slate-700 p-2 rounded-lg text-white font-mono text-xs"
+                                      className="w-full bg-white border border-slate-200 p-2 rounded-lg text-slate-900 font-mono text-xs focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none"
                                       placeholder="AIza..."
                                       value={configForm.ytApiKey}
                                       onChange={e => setConfigForm({ ...configForm, ytApiKey: e.target.value })}
@@ -1517,9 +1522,9 @@ export default function Home() {
                               {cfg.platform === 'TikTok' && (
                                 <div className="space-y-2">
                                   <div>
-                                    <label className="text-[10px] text-slate-400 font-bold block mb-1">TikTok Username (@kênh):</label>
+                                    <label className="text-[10px] text-slate-600 font-bold block mb-1">TikTok Username (@kênh):</label>
                                     <input
-                                      className="w-full bg-slate-950 border border-slate-700 p-2 rounded-lg text-white font-mono text-xs"
+                                      className="w-full bg-white border border-slate-200 p-2 rounded-lg text-slate-900 font-mono text-xs focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none"
                                       placeholder="oj0.8sync"
                                       value={configForm.ttUsername}
                                       onChange={e => setConfigForm({ ...configForm, ttUsername: e.target.value })}
@@ -1527,20 +1532,20 @@ export default function Home() {
                                   </div>
                                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                     <div>
-                                      <label className="text-[10px] text-slate-400 font-bold block mb-1">TikTok Access Token (Chính thức):</label>
+                                      <label className="text-[10px] text-slate-600 font-bold block mb-1">TikTok Access Token (Chính thức):</label>
                                       <input
                                         type="password"
-                                        className="w-full bg-slate-950 border border-slate-700 p-2 rounded-lg text-white font-mono text-xs"
+                                        className="w-full bg-white border border-slate-200 p-2 rounded-lg text-slate-900 font-mono text-xs focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none"
                                         placeholder="act.example..."
                                         value={configForm.ttAccessToken}
                                         onChange={e => setConfigForm({ ...configForm, ttAccessToken: e.target.value })}
                                       />
                                     </div>
                                     <div>
-                                      <label className="text-[10px] text-slate-400 font-bold block mb-1">Hoặc RapidAPI Key (Tùy chọn):</label>
+                                      <label className="text-[10px] text-slate-600 font-bold block mb-1">Hoặc RapidAPI Key (Tùy chọn):</label>
                                       <input
                                         type="password"
-                                        className="w-full bg-slate-950 border border-slate-700 p-2 rounded-lg text-white font-mono text-xs"
+                                        className="w-full bg-white border border-slate-200 p-2 rounded-lg text-slate-900 font-mono text-xs focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none"
                                         placeholder="Khóa RapidAPI nếu dùng proxy..."
                                         value={configForm.rapidApiKey}
                                         onChange={e => setConfigForm({ ...configForm, rapidApiKey: e.target.value })}
@@ -1562,7 +1567,7 @@ export default function Home() {
                                     ttAccessToken: configForm.ttAccessToken,
                                     rapidApiKey: configForm.rapidApiKey,
                                   })}
-                                  className="bg-sky-500 hover:bg-sky-400 text-slate-950 font-black px-4 py-1.5 rounded-lg text-xs transition"
+                                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-black px-4 py-1.5 rounded-lg text-xs transition cursor-pointer shadow-sm shadow-emerald-600/20"
                                 >
                                   Lưu Cấu Hình
                                 </button>
@@ -1585,12 +1590,12 @@ export default function Home() {
               </div>
                {/* FB Groups Management */}
               {/* FB Groups & Fanpages Management */}
-              <div className="bg-slate-50/80 p-4 rounded-xl border border-slate-200">
+              <div className="bg-white p-5 rounded-2xl border border-emerald-100 shadow-2xs">
                 <div className="flex justify-between items-center mb-3">
-                  <h3 className="font-bold text-sm text-sky-700 flex items-center gap-1.5">
+                  <h3 className="font-extrabold text-sm text-slate-900 flex items-center gap-1.5">
                     <span>📘</span> Quản Lý Fanpage & Nhóm Facebook
                   </h3>
-                  <span className="text-[11px] text-slate-500 font-bold">Phân rõ Page vs Seeding Group</span>
+                  <span className="text-[11px] text-emerald-700 bg-emerald-50 border border-emerald-200/60 px-2 py-0.5 rounded font-bold">Phân rõ Page vs Group</span>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-2 mb-3">
                     <select 
@@ -1599,15 +1604,15 @@ export default function Home() {
                         const val = e.target.value;
                         if (val === 'PAGE' || val === 'PROFILE' || val === 'GROUP') setGroupType(val);
                       }} 
-                      className="border border-slate-200 p-2.5 rounded-xl text-xs font-bold bg-white text-slate-800 sm:w-44"
+                      className="border border-slate-200 p-2.5 rounded-xl text-xs font-bold bg-slate-50 text-slate-800 sm:w-44 focus:bg-white"
                     >
                       <option value="PAGE">📘 Fanpage chính chủ</option>
                       <option value="PROFILE">👤 Profile cá nhân</option>
                       <option value="GROUP">👥 Nhóm Seeding</option>
                     </select>
-                    <input className="border border-slate-200 p-2.5 rounded-xl flex-1 text-xs font-semibold bg-white" placeholder="Tên Fanpage / Nhóm..." value={groupName} onChange={e => setGroupName(e.target.value)} />
-                    <input className="border border-slate-200 p-2.5 rounded-xl flex-1 text-xs font-semibold bg-white" placeholder="Link (URL)..." value={groupLink} onChange={e => setGroupLink(e.target.value)} />
-                    <button onClick={addGroup} className="bg-sky-600 hover:bg-sky-700 text-white px-4 py-2.5 rounded-xl font-bold text-xs w-full sm:w-auto">Thêm</button>
+                    <input className="border border-slate-200 p-2.5 rounded-xl flex-1 text-xs font-semibold bg-slate-50 focus:bg-white" placeholder="Tên Fanpage / Nhóm..." value={groupName} onChange={e => setGroupName(e.target.value)} />
+                    <input className="border border-slate-200 p-2.5 rounded-xl flex-1 text-xs font-semibold bg-slate-50 focus:bg-white" placeholder="Link (URL)..." value={groupLink} onChange={e => setGroupLink(e.target.value)} />
+                    <button onClick={addGroup} className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl font-bold text-xs w-full sm:w-auto shadow-sm shadow-emerald-600/20 cursor-pointer">Thêm</button>
                 </div>
                 <table className="w-full text-xs">
                     <thead>
@@ -1633,15 +1638,14 @@ export default function Home() {
                 </table>
               </div>
 
-               {/* YouTube Channels Management */}
-               <div className="bg-red-50/40 p-4 rounded-xl border border-red-100">
-                 <h3 className="font-bold text-sm text-red-600 mb-3 flex items-center gap-1.5">
+               <div className="bg-white p-5 rounded-2xl border border-red-100 shadow-2xs">
+                 <h3 className="font-extrabold text-sm text-red-700 mb-3 flex items-center gap-1.5">
                    <span>🎬</span> Quản Lý Kênh YouTube
                  </h3>
                  <div className="flex flex-col sm:flex-row gap-2 mb-3">
-                     <input className="border border-slate-200 p-2.5 rounded-xl flex-1 text-xs font-semibold" placeholder="Tên kênh" value={ytChannelName} onChange={e => setYtChannelName(e.target.value)} />
-                     <input className="border border-slate-200 p-2.5 rounded-xl flex-1 text-xs font-semibold" placeholder="Link kênh" value={ytChannelLink} onChange={e => setYtChannelLink(e.target.value)} />
-                     <button onClick={addYtChannel} className="bg-red-600 hover:bg-red-700 text-white px-4 py-2.5 rounded-xl font-bold text-xs w-full sm:w-auto">Thêm</button>
+                     <input className="border border-slate-200 p-2.5 rounded-xl flex-1 text-xs font-semibold bg-slate-50 focus:bg-white" placeholder="Tên kênh" value={ytChannelName} onChange={e => setYtChannelName(e.target.value)} />
+                     <input className="border border-slate-200 p-2.5 rounded-xl flex-1 text-xs font-semibold bg-slate-50 focus:bg-white" placeholder="Link kênh" value={ytChannelLink} onChange={e => setYtChannelLink(e.target.value)} />
+                     <button onClick={addYtChannel} className="bg-red-600 hover:bg-red-700 text-white px-4 py-2.5 rounded-xl font-bold text-xs w-full sm:w-auto shadow-sm shadow-red-600/20 cursor-pointer">Thêm</button>
                  </div>
                  <table className="w-full text-xs">
                      <thead><tr className="border-b border-slate-200 text-slate-400 text-left"><th className="py-1.5">Kênh YouTube</th><th className="text-right">Link</th></tr></thead>
@@ -1657,36 +1661,36 @@ export default function Home() {
                </div>
 
               {/* TikTok Channels Management */}
-              <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 text-white">
-                <h3 className="font-bold text-sm text-sky-400 mb-3 flex items-center gap-1.5">
+              <div className="bg-white p-5 rounded-2xl border border-emerald-100 shadow-2xs">
+                <h3 className="font-extrabold text-sm text-emerald-900 mb-3 flex items-center gap-1.5">
                   <span>🎵</span> Quản Lý Kênh TikTok
                 </h3>
                 <div className="flex flex-col sm:flex-row gap-2 mb-3">
-                    <input className="border border-slate-800 bg-slate-900 p-2.5 rounded-xl flex-1 text-xs font-semibold text-white placeholder-slate-500" placeholder="Tên kênh TikTok" value={ttChannelName} onChange={e => setTtChannelName(e.target.value)} />
-                    <input className="border border-slate-800 bg-slate-900 p-2.5 rounded-xl flex-1 text-xs font-semibold text-white placeholder-slate-500" placeholder="Link kênh TikTok" value={ttChannelLink} onChange={e => setTtChannelLink(e.target.value)} />
-                    <button onClick={addTtChannel} className="bg-sky-500 hover:bg-sky-600 text-slate-950 px-4 py-2.5 rounded-xl font-black text-xs w-full sm:w-auto">Thêm</button>
+                    <input className="border border-slate-200 bg-slate-50 focus:bg-white p-2.5 rounded-xl flex-1 text-xs font-semibold text-slate-900 placeholder-slate-400" placeholder="Tên kênh TikTok" value={ttChannelName} onChange={e => setTtChannelName(e.target.value)} />
+                    <input className="border border-slate-200 bg-slate-50 focus:bg-white p-2.5 rounded-xl flex-1 text-xs font-semibold text-slate-900 placeholder-slate-400" placeholder="Link kênh TikTok" value={ttChannelLink} onChange={e => setTtChannelLink(e.target.value)} />
+                    <button onClick={addTtChannel} className="bg-emerald-700 hover:bg-emerald-800 text-white px-4 py-2.5 rounded-xl font-bold text-xs w-full sm:w-auto shadow-sm shadow-emerald-700/20 cursor-pointer">Thêm</button>
                 </div>
                 <table className="w-full text-xs">
-                    <thead><tr className="border-b border-slate-800 text-slate-400 text-left"><th className="py-1.5">Kênh TikTok</th><th className="text-right">Link</th></tr></thead>
+                    <thead><tr className="border-b border-emerald-100 text-slate-400 text-left"><th className="py-1.5">Kênh TikTok</th><th className="text-right">Link</th></tr></thead>
                     <tbody>{ttChannels.map((c, i) => (
-                      <tr key={i} className="border-b border-slate-900">
-                        <td className="py-2 font-bold text-slate-200">{c.name}</td>
+                      <tr key={i} className="border-b border-emerald-50">
+                        <td className="py-2 font-bold text-slate-800">{c.name}</td>
                         <td className="text-right">
-                          <a href={c.link.startsWith('http') ? c.link : `https://${c.link}`} target="_blank" rel="noopener noreferrer" className="text-sky-400 font-bold underline">Xem ↗</a>
+                          <a href={c.link.startsWith('http') ? c.link : `https://${c.link}`} target="_blank" rel="noopener noreferrer" className="text-emerald-700 font-bold underline">Xem ↗</a>
                         </td>
                       </tr>
                     ))}</tbody>
                 </table>
               </div>
               {/* Webhook Configuration Management */}
-              <div className="bg-indigo-950 p-4 rounded-xl border border-indigo-800 text-white">
-                <h3 className="font-bold text-sm text-indigo-400 mb-2 flex items-center gap-1.5">
+              <div className="bg-gradient-to-br from-emerald-50/70 via-white to-teal-50/40 p-5 rounded-2xl border border-emerald-200/80 shadow-2xs">
+                <h3 className="font-extrabold text-sm text-emerald-950 mb-1.5 flex items-center gap-1.5">
                   <span>🤖</span> Cấu Hình Bot Webhook Thông Báo Tự Động
                 </h3>
-                <p className="text-xs text-indigo-200 mb-3">Dán URL Webhook của Telegram, Lark Suite hoặc Zalo Bot vào đây để tự động nhận thông báo báo cáo mới.</p>
+                <p className="text-xs text-slate-500 mb-3">Dán URL Webhook của Telegram, Lark Suite hoặc Zalo Bot vào đây để tự động nhận thông báo báo cáo mới.</p>
                 <div className="flex gap-2">
-                  <input className="border border-indigo-800 bg-indigo-900/90 p-2.5 rounded-xl flex-1 text-xs font-semibold text-white placeholder-indigo-400" placeholder="https://open.larksuite.com/open-apis/bot/v2/hook/..." value={webhookUrlInput} onChange={e => setWebhookUrlInput(e.target.value)} />
-                  <button onClick={saveWebhook} className="bg-indigo-500 hover:bg-indigo-600 text-white px-4 rounded-xl font-extrabold text-xs">Lưu Webhook</button>
+                  <input className="border border-slate-200 bg-white p-2.5 rounded-xl flex-1 text-xs font-semibold text-slate-900 placeholder-slate-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none" placeholder="https://open.larksuite.com/open-apis/bot/v2/hook/..." value={webhookUrlInput} onChange={e => setWebhookUrlInput(e.target.value)} />
+                  <button onClick={saveWebhook} className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 rounded-xl font-bold text-xs shadow-sm shadow-emerald-600/20 cursor-pointer">Lưu Webhook</button>
                 </div>
               </div>
             </div>

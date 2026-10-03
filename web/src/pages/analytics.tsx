@@ -372,12 +372,12 @@ export default function Analytics() {
   return (
     <Layout>
       {/* HEADER WITH TIME & PAGE FILTERS */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-200">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6 pb-4 border-b border-emerald-100">
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Studio Phân Tích & Hiệu Suất Kênh</h1>
-            <span className="bg-sky-100 text-sky-800 text-xs px-2.5 py-0.5 rounded-full font-black uppercase tracking-wider">
-              Studio Pro v3
+            <span className="bg-emerald-50 text-emerald-800 border border-emerald-200/80 text-xs px-2.5 py-0.5 rounded-full font-black uppercase tracking-wider">
+              Studio Pro
             </span>
           </div>
           <p className="text-slate-500 text-sm mt-1 font-semibold">
@@ -385,14 +385,14 @@ export default function Analytics() {
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 bg-slate-100 p-1.5 rounded-2xl border border-slate-200 font-bold text-xs">
+        <div className="flex flex-wrap items-center gap-2 bg-white p-1.5 rounded-2xl border border-emerald-100 shadow-xs font-bold text-xs">
           {/* Lọc theo Page */}
-          <div className="flex items-center gap-1.5 bg-white px-2.5 py-1 rounded-xl border border-slate-200">
-            <span className="text-slate-400 font-black">🏢 Kênh:</span>
+          <div className="flex items-center gap-1.5 bg-emerald-50/60 px-2.5 py-1.5 rounded-xl border border-emerald-100">
+            <span className="text-emerald-900 font-black">🏢 Kênh:</span>
             <select
               value={selectedPageFilter}
               onChange={e => setSelectedPageFilter(e.target.value)}
-              className="bg-transparent font-black text-slate-800 outline-none text-xs cursor-pointer max-w-[170px] truncate"
+              className="bg-transparent font-black text-emerald-950 outline-none text-xs cursor-pointer max-w-[170px] truncate"
             >
               <option value="ALL">Tất cả các Page ({distinctPages.length})</option>
               {distinctPages.map((p, idx) => (
@@ -407,14 +407,14 @@ export default function Analytics() {
           <select 
             value={filterMonth} 
             onChange={e => setFilterMonth(Number(e.target.value))}
-            className="bg-white border border-slate-200 px-3 py-1.5 rounded-xl text-slate-800"
+            className="bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl text-slate-800 focus:bg-white"
           >
             {Array.from({length: 12}, (_, i) => <option key={i+1} value={i+1}>Tháng {i+1}</option>)}
           </select>
           <select 
             value={filterYear} 
             onChange={e => setFilterYear(Number(e.target.value))}
-            className="bg-white border border-slate-200 px-3 py-1.5 rounded-xl text-slate-800"
+            className="bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl text-slate-800 focus:bg-white"
           >
             {[2025, 2026, 2027].map(y => <option key={y} value={y}>Năm {y}</option>)}
           </select>
@@ -423,14 +423,14 @@ export default function Analytics() {
 
       {/* FILTER STATUS BADGE IF FILTERED */}
       {selectedPageFilter !== 'ALL' && (
-        <div className="mb-5 flex items-center justify-between p-3 rounded-2xl bg-sky-50 border border-sky-200 text-sky-900 text-xs font-bold">
+        <div className="mb-5 flex items-center justify-between p-3.5 rounded-2xl bg-emerald-50/90 border border-emerald-200 text-emerald-900 text-xs font-bold shadow-2xs">
           <div className="flex items-center gap-2">
             <span>📌</span>
-            <span>Đang lọc phân tích riêng cho Page/Kênh: <strong className="text-sky-950 underline">{selectedPageFilter}</strong> ({activeReports.length} bài)</span>
+            <span>Đang lọc phân tích riêng cho Page/Kênh: <strong className="text-emerald-950 underline">{selectedPageFilter}</strong> ({activeReports.length} bài)</span>
           </div>
           <button 
             onClick={() => setSelectedPageFilter('ALL')}
-            className="text-xs font-black bg-white hover:bg-sky-100 text-sky-700 px-3 py-1 rounded-xl border border-sky-200 transition"
+            className="text-xs font-black bg-white hover:bg-emerald-100 text-emerald-800 px-3 py-1 rounded-xl border border-emerald-200 transition cursor-pointer"
           >
             ✕ Xem tất cả các Page
           </button>
@@ -439,36 +439,36 @@ export default function Analytics() {
 
       {/* 5 KPI CARDS */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+        <div className="bg-white p-5 rounded-3xl border border-emerald-100 shadow-2xs flex items-center justify-between">
           <div>
-            <div className="text-xs font-black text-slate-400 uppercase tracking-wider">Tổng Bài Đăng</div>
+            <div className="text-[11px] font-black text-slate-400 uppercase tracking-wider">Tổng Bài Đăng</div>
             <div className="text-3xl font-black text-slate-900 mt-1">{totalPosts}</div>
             <div className={`text-xs font-black mt-1 ${postDiff >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
               {postDiff >= 0 ? '▲' : '▼'} {Math.abs(postDiff)}% vs {prevLabel}
             </div>
           </div>
-          <div className="w-11 h-11 bg-sky-50 text-sky-600 rounded-2xl flex items-center justify-center font-black text-xl">📊</div>
+          <div className="w-11 h-11 bg-emerald-50 text-emerald-700 rounded-2xl flex items-center justify-center font-black text-xl border border-emerald-100">📊</div>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+        <div className="bg-white p-5 rounded-3xl border border-emerald-200/80 shadow-2xs flex items-center justify-between">
           <div>
-            <div className="text-xs font-black text-slate-400 uppercase tracking-wider">Tổng Reach / Views</div>
+            <div className="text-[11px] font-black text-emerald-700 uppercase tracking-wider">Tổng Reach / Views</div>
             <div className="text-3xl font-black text-emerald-600 mt-1">{totalReach.toLocaleString()}</div>
             <div className={`text-xs font-black mt-1 ${reachDiff >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
               {reachDiff >= 0 ? '▲' : '▼'} {Math.abs(reachDiff)}% vs {prevLabel}
             </div>
           </div>
-          <div className="w-11 h-11 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center font-black text-xl">📈</div>
+          <div className="w-11 h-11 bg-emerald-100/80 text-emerald-800 rounded-2xl flex items-center justify-center font-black text-xl border border-emerald-200">📈</div>
         </div>
 
         {/* TIN NHẮN KHÁCH & TỶ LỆ CHUYỂN ĐỔI */}
-        <div className="bg-white p-5 rounded-2xl border border-indigo-200 shadow-sm flex items-center justify-between bg-gradient-to-tr from-indigo-50/40 to-white">
+        <div className="bg-gradient-to-tr from-emerald-50/90 via-white to-teal-50/50 p-5 rounded-3xl border border-emerald-200 shadow-2xs flex items-center justify-between">
           <div>
-            <div className="text-xs font-black text-indigo-700 uppercase tracking-wider flex items-center gap-1">
+            <div className="text-[11px] font-black text-emerald-800 uppercase tracking-wider flex items-center gap-1">
               <span>💬</span> Tin Nhắn Khách
             </div>
-            <div className="text-3xl font-black text-indigo-900 mt-1">{totalInbox.toLocaleString()}</div>
-            <div className="text-xs font-black text-indigo-600 mt-1 flex items-center gap-1.5">
+            <div className="text-3xl font-black text-emerald-950 mt-1">{totalInbox.toLocaleString()}</div>
+            <div className="text-xs font-black text-emerald-700 mt-1 flex items-center gap-1.5">
               <span>Tỷ lệ: {inboxRate}%</span>
               {prevInbox > 0 && (
                 <span className={inboxDiff >= 0 ? 'text-emerald-600' : 'text-rose-600'}>
@@ -477,33 +477,33 @@ export default function Analytics() {
               )}
             </div>
           </div>
-          <div className="w-11 h-11 bg-indigo-600 text-white rounded-2xl flex items-center justify-center font-black text-xl shadow-md shadow-indigo-200">
+          <div className="w-11 h-11 bg-emerald-600 text-white rounded-2xl flex items-center justify-center font-black text-xl shadow-md shadow-emerald-600/20">
             💬
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+        <div className="bg-white p-5 rounded-3xl border border-emerald-100 shadow-2xs flex items-center justify-between">
           <div>
-            <div className="text-xs font-black text-slate-400 uppercase tracking-wider">Tỷ Lệ Giữ Chân 3s</div>
+            <div className="text-[11px] font-black text-slate-400 uppercase tracking-wider">Tỷ Lệ Giữ Chân 3s</div>
             <div className="text-3xl font-black text-amber-600 mt-1">{videoRetentionStats.avg3sRetention}%</div>
             <div className="text-xs font-semibold text-slate-400 mt-1">Hoàn thành: {videoRetentionStats.avgCompletionRate}%</div>
           </div>
-          <div className="w-11 h-11 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center font-black text-xl">⚡</div>
+          <div className="w-11 h-11 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center font-black text-xl border border-amber-100">⚡</div>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+        <div className="bg-white p-5 rounded-3xl border border-emerald-100 shadow-2xs flex items-center justify-between">
           <div>
-            <div className="text-xs font-black text-slate-400 uppercase tracking-wider">Tỷ Lệ Đã Share</div>
-            <div className="text-3xl font-black text-sky-600 mt-1">{totalPosts > 0 ? Math.round((sharedCount / totalPosts) * 100) : 0}%</div>
+            <div className="text-[11px] font-black text-slate-400 uppercase tracking-wider">Tỷ Lệ Đã Share</div>
+            <div className="text-3xl font-black text-teal-600 mt-1">{totalPosts > 0 ? Math.round((sharedCount / totalPosts) * 100) : 0}%</div>
             <div className="text-xs font-semibold text-slate-400 mt-1">{sharedCount}/{totalPosts} bài đã share</div>
           </div>
-          <div className="w-11 h-11 bg-sky-50 text-sky-600 rounded-2xl flex items-center justify-center font-black text-xl">🚀</div>
+          <div className="w-11 h-11 bg-teal-50 text-teal-600 rounded-2xl flex items-center justify-center font-black text-xl border border-teal-100">🚀</div>
         </div>
       </div>
 
       {/* PAGE SCORECARD - SO SÁNH HIỆU SUẤT TỪNG PAGE */}
-      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm mb-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-100 gap-2 mb-4">
+      <div className="bg-white p-6 rounded-3xl border border-emerald-100 shadow-2xs mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-emerald-100 gap-2 mb-4">
           <div>
             <h2 className="font-black text-base text-slate-900 flex items-center gap-2">
               <span>🏢</span> Bảng So Sánh Hiệu Suất Từng Fanpage & Kênh — {monthLabel}
@@ -512,7 +512,7 @@ export default function Analytics() {
               Phân tách rõ ràng giữa các Fanpage sở hữu, Kênh video và Nhóm seeding để đánh giá tỷ lệ ra khách
             </p>
           </div>
-          <span className="text-xs bg-slate-100 px-3 py-1.5 rounded-xl font-bold text-slate-600 self-start sm:self-auto">
+          <span className="text-xs bg-emerald-50 border border-emerald-200/60 px-3 py-1.5 rounded-xl font-bold text-emerald-800 self-start sm:self-auto">
             Tổng cộng {pageScorecard.length} kênh/nhóm
           </span>
         </div>
@@ -520,12 +520,12 @@ export default function Analytics() {
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs min-w-[700px]">
             <thead>
-              <tr className="border-b border-slate-200 text-slate-400 font-black uppercase">
+              <tr className="border-b border-emerald-100 bg-emerald-50/70 text-emerald-950 font-black uppercase">
                 <th className="py-2.5 px-3">Fanpage / Kênh</th>
                 <th className="py-2.5 px-3">Nền tảng</th>
                 <th className="py-2.5 px-3 text-center">Số bài</th>
                 <th className="py-2.5 px-3 text-right">Tổng Reach</th>
-                <th className="py-2.5 px-3 text-center text-indigo-700">💬 Tin Nhắn Khách</th>
+                <th className="py-2.5 px-3 text-center text-emerald-900">💬 Tin Nhắn Khách</th>
                 <th className="py-2.5 px-3 text-center">Tỷ lệ Inbox / Reach</th>
                 <th className="py-2.5 px-3 text-right">Reach đỉnh bài</th>
                 <th className="py-2.5 px-3 text-right">Thao tác</th>
@@ -541,29 +541,29 @@ export default function Analytics() {
               ) : pageScorecard.map((p, idx) => (
                 <tr 
                   key={idx} 
-                  className={`border-b border-slate-100 hover:bg-slate-50/80 transition ${selectedPageFilter === p.name ? 'bg-sky-50/60' : ''}`}
+                  className={`border-b border-emerald-50 hover:bg-emerald-50/40 transition ${selectedPageFilter === p.name ? 'bg-emerald-50/70' : ''}`}
                 >
                   <td className="py-3 px-3 font-black text-slate-900 flex items-center gap-2">
-                    <span className="w-6 h-6 rounded-lg bg-slate-100 flex items-center justify-center text-xs">
+                    <span className="w-6 h-6 rounded-lg bg-emerald-100/70 text-emerald-800 flex items-center justify-center text-xs">
                       {idx + 1}
                     </span>
                     <span className="truncate max-w-[200px]">{p.name}</span>
                     {p.inboxCount > 0 && (
-                      <span className="text-[10px] bg-indigo-100 text-indigo-800 font-extrabold px-1.5 py-0.5 rounded">
+                      <span className="text-[10px] bg-emerald-100 text-emerald-800 font-extrabold px-1.5 py-0.5 rounded">
                         Có khách
                       </span>
                     )}
                   </td>
                   <td className="py-3 px-3">
-                    <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold ${p.platform === 'Facebook' ? 'bg-sky-100 text-sky-800' : p.platform === 'YouTube' ? 'bg-red-100 text-red-800' : 'bg-slate-950 text-white'}`}>
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold ${p.platform === 'Facebook' ? 'bg-sky-50 text-sky-700 border border-sky-200/60' : p.platform === 'YouTube' ? 'bg-red-50 text-red-700 border border-red-200/60' : 'bg-emerald-800 text-white'}`}>
                       {p.platform}
                     </span>
                   </td>
                   <td className="py-3 px-3 text-center font-bold text-slate-700">{p.postsCount}</td>
                   <td className="py-3 px-3 text-right font-black text-slate-900">{p.reach.toLocaleString()}</td>
-                  <td className="py-3 px-3 text-center font-black text-indigo-600 bg-indigo-50/40">
+                  <td className="py-3 px-3 text-center font-black text-emerald-800 bg-emerald-50/40">
                     {p.inboxCount > 0 ? (
-                      <span className="bg-indigo-600 text-white px-2 py-0.5 rounded-full text-[11px]">
+                      <span className="bg-emerald-600 text-white px-2 py-0.5 rounded-full text-[11px]">
                         {p.inboxCount}
                       </span>
                     ) : (
@@ -571,7 +571,7 @@ export default function Analytics() {
                     )}
                   </td>
                   <td className="py-3 px-3 text-center">
-                    <span className={`font-black text-xs ${p.inboxRate >= 0.5 ? 'text-emerald-600' : p.inboxRate > 0 ? 'text-indigo-600' : 'text-slate-400'}`}>
+                    <span className={`font-black text-xs ${p.inboxRate >= 0.5 ? 'text-emerald-700' : p.inboxRate > 0 ? 'text-teal-700' : 'text-slate-400'}`}>
                       {p.inboxRate}%
                     </span>
                   </td>
@@ -579,7 +579,7 @@ export default function Analytics() {
                   <td className="py-3 px-3 text-right">
                     <button
                       onClick={() => setSelectedPageFilter(selectedPageFilter === p.name ? 'ALL' : p.name)}
-                      className={`px-2.5 py-1 rounded-lg text-xs font-bold transition ${selectedPageFilter === p.name ? 'bg-sky-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${selectedPageFilter === p.name ? 'bg-emerald-600 text-white' : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200/60'}`}
                     >
                       {selectedPageFilter === p.name ? 'Đang lọc ✓' : 'Lọc Page này'}
                     </button>
@@ -590,24 +590,23 @@ export default function Analytics() {
           </table>
         </div>
       </div>
-
       {/* LINE CHART: XU HƯỚNG REACH & TIN NHẮN THEO NGÀY */}
-      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm mb-6">
-        <div className="flex flex-wrap gap-x-2 gap-y-1 justify-between items-center pb-3 border-b border-slate-100 mb-4">
+      <div className="bg-white p-6 rounded-3xl border border-emerald-100 shadow-2xs mb-6">
+        <div className="flex flex-wrap gap-x-2 gap-y-1 justify-between items-center pb-3 border-b border-emerald-100 mb-4">
           <div>
             <h2 className="font-black text-base text-slate-900">
               Xu Hướng Reach & Tin Nhắn Khách Theo Ngày — {monthLabel}
             </h2>
             <p className="text-xs text-slate-400 font-semibold mt-0.5">
-              Đường xanh: Lượt tiếp cận • Điểm tím: Ngày phát sinh tin nhắn khách
+              Đường xanh ngọc: Lượt tiếp cận • Điểm xanh đậm: Ngày phát sinh tin nhắn khách
             </p>
           </div>
           <div className="flex items-center gap-3 text-xs font-bold">
-            <span className="text-sky-600 flex items-center gap-1">
-              <span className="w-2.5 h-2.5 rounded-full bg-sky-500"></span> Đỉnh Reach: {maxDayReach.toLocaleString()}
+            <span className="text-emerald-700 flex items-center gap-1">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Đỉnh Reach: {maxDayReach.toLocaleString()}
             </span>
-            <span className="text-indigo-600 flex items-center gap-1">
-              <span className="w-2.5 h-2.5 rounded-full bg-indigo-600"></span> Đỉnh Inbox: {maxDayInbox}
+            <span className="text-teal-700 flex items-center gap-1">
+              <span className="w-2.5 h-2.5 rounded-full bg-teal-600"></span> Đỉnh Inbox: {maxDayInbox}
             </span>
           </div>
         </div>
@@ -615,8 +614,8 @@ export default function Analytics() {
         <svg viewBox={`0 0 ${chartW} ${chartH}`} className="w-full h-64">
           <defs>
             <linearGradient id="reachAreaGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#0ea5e9" stopOpacity="0.35" />
-              <stop offset="100%" stopColor="#0ea5e9" stopOpacity="0.02" />
+              <stop offset="0%" stopColor="#10b981" stopOpacity="0.30" />
+              <stop offset="100%" stopColor="#10b981" stopOpacity="0.01" />
             </linearGradient>
           </defs>
           {[0.25, 0.5, 0.75, 1].map(f => (
@@ -633,8 +632,7 @@ export default function Analytics() {
           ))}
 
           <path d={areaPath} fill="url(#reachAreaGrad)" />
-          <path d={linePath} fill="none" stroke="#0284c7" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
-
+          <path d={linePath} fill="none" stroke="#059669" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
           {daySeries.map(d => {
             const cx = x(d.day);
             const cy = y(d.reach);
@@ -669,7 +667,7 @@ export default function Analytics() {
       </div>
 
       {/* PHÂN HỆ MỚI 1: 24x7 POSTING TIME HEATMAP */}
-      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm mb-6 space-y-4">
+      <div className="bg-white p-6 rounded-3xl border border-emerald-100 shadow-2xs mb-6 space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-100 gap-2">
           <div>
             <h2 className="font-black text-base text-slate-900 flex items-center gap-2">
@@ -717,11 +715,11 @@ export default function Analytics() {
                   let colorClass = 'bg-slate-100/80 text-slate-400';
                   if (cell.count > 0) {
                     if (ratio > 0.6 || cell.inbox > 0) {
-                      colorClass = 'bg-indigo-600 text-white font-black shadow-sm ring-1 ring-indigo-400';
+                      colorClass = 'bg-emerald-600 text-white font-black shadow-sm ring-1 ring-emerald-400';
                     } else if (ratio > 0.3) {
-                      colorClass = 'bg-sky-400 text-white font-bold';
+                      colorClass = 'bg-emerald-400 text-white font-bold';
                     } else {
-                      colorClass = 'bg-sky-100 text-sky-900 font-bold';
+                      colorClass = 'bg-emerald-100 text-emerald-900 font-bold';
                     }
                   }
 
@@ -864,8 +862,8 @@ export default function Analytics() {
         </div>
 
         {/* PHÂN HỆ MỚI 3: CONTENT PILLARS DIAGNOSTICS */}
-        <div className="lg:col-span-5 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-          <div className="pb-3 border-b border-slate-100">
+        <div className="lg:col-span-5 bg-white p-6 rounded-3xl border border-emerald-100 shadow-2xs space-y-4">
+          <div className="pb-3 border-b border-emerald-100">
             <h2 className="font-black text-base text-slate-900 flex items-center gap-2">
               <span>🎯</span> Chẩn Đoán Trục Nội Dung (Content Pillars)
             </h2>
@@ -876,12 +874,12 @@ export default function Analytics() {
 
           <div className="space-y-3 py-1">
             {contentPillars.map((pillar, idx) => (
-              <div key={idx} className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1.5 text-xs">
+              <div key={idx} className="p-3.5 rounded-2xl bg-emerald-50/40 border border-emerald-100/80 space-y-1.5 text-xs">
                 <div className="flex items-center justify-between font-black text-slate-900">
                   <span className="flex items-center gap-1.5">
                     <span>{pillar.icon}</span> {pillar.name}
                   </span>
-                  <span className="text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded font-black">
+                  <span className="text-emerald-800 bg-emerald-100/70 border border-emerald-200/60 px-2 py-0.5 rounded-md font-black">
                     💬 {pillar.inboxCount} Inbox ({pillar.inboxRate}%)
                   </span>
                 </div>
@@ -889,9 +887,9 @@ export default function Analytics() {
                   <span>{pillar.postsCount} bài đăng</span>
                   <span>{pillar.reach.toLocaleString()} Reach</span>
                 </div>
-                <div className="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden">
+                <div className="w-full bg-emerald-100/70 rounded-full h-1.5 overflow-hidden">
                   <div
-                    className="bg-indigo-600 h-1.5 rounded-full"
+                    className="bg-emerald-600 h-1.5 rounded-full"
                     style={{ width: `${Math.min(100, (pillar.reach / Math.max(totalReach, 1)) * 100)}%` }}
                   ></div>
                 </div>
@@ -902,7 +900,7 @@ export default function Analytics() {
       </div>
 
       {/* TOP CONTENT KÉO INBOX NHIỀU NHẤT & CLICK ĐỂ XEM CHI TIẾT */}
-      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm mb-6">
+      <div className="bg-white p-6 rounded-3xl border border-emerald-100 shadow-2xs mb-6">
         <div className="flex flex-wrap items-center justify-between pb-3 border-b border-slate-100 mb-4">
           <div>
             <h2 className="font-black text-base text-slate-900 flex items-center gap-2">

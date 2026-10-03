@@ -22,41 +22,50 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-6">
-      <div className="w-full max-w-sm bg-slate-900 p-8 rounded-3xl border border-slate-800 shadow-2xl space-y-5">
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50/80 via-white to-teal-50/60 flex items-center justify-center p-6 selection:bg-emerald-100 selection:text-emerald-900">
+      <div className="w-full max-w-sm bg-white p-8 rounded-3xl border border-emerald-100/80 shadow-2xl shadow-emerald-600/5 space-y-6">
         <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center text-white font-black text-lg">CF</div>
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white font-black text-xl shadow-md shadow-emerald-500/25">
+            CF
+          </div>
           <div>
-            <h1 className="text-lg font-black text-white tracking-wide">ContentFlow CRM</h1>
-            <p className="text-[11px] font-bold text-emerald-400 uppercase tracking-wider">Đăng nhập hệ thống</p>
+            <h1 className="text-lg font-black text-slate-900 tracking-tight">ContentFlow CRM</h1>
+            <p className="text-[11px] font-bold text-emerald-700 uppercase tracking-wider">Đăng nhập hệ thống</p>
           </div>
         </div>
 
-        <div>
-          <label className="block text-xs font-black text-slate-400 uppercase tracking-wide mb-1.5">Mật khẩu</label>
+        <div className="space-y-1.5">
+          <label className="block text-xs font-black text-slate-700 uppercase tracking-wide">Mật khẩu</label>
           <input
             type="password"
-            className="w-full bg-slate-950 border border-slate-800 p-3 rounded-xl text-sm font-semibold text-white focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
-            placeholder="Nhập mật khẩu..."
+            className="w-full bg-slate-50/80 border border-slate-200 p-3 rounded-xl text-sm font-semibold text-slate-900 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition"
+            placeholder="Nhập mật khẩu truy cập..."
             value={password}
             onChange={e => { setPassword(e.target.value); setError(''); }}
             onKeyDown={e => e.key === 'Enter' && doLogin('admin')}
           />
-          {error && <p className="text-xs font-bold text-rose-400 mt-1.5">{error}</p>}
+          {error && <p className="text-xs font-bold text-rose-500 mt-1">{error}</p>}
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <button onClick={() => doLogin('admin')} className="bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-white py-3 rounded-xl font-black text-xs shadow-lg transition">
-            🔐 Đăng nhập Admin
+        <div className="grid grid-cols-2 gap-2.5">
+          <button
+            type="button"
+            onClick={() => doLogin('admin')}
+            className="bg-emerald-600 hover:bg-emerald-700 active:scale-98 text-white py-3 rounded-xl font-black text-xs shadow-md shadow-emerald-600/20 transition cursor-pointer"
+          >
+            🔐 Admin
           </button>
-          <button onClick={() => doLogin('member')} className="bg-slate-800 hover:bg-slate-700 text-slate-200 py-3 rounded-xl font-black text-xs border border-slate-700 transition">
+          <button
+            type="button"
+            onClick={() => doLogin('member')}
+            className="bg-emerald-50/80 hover:bg-emerald-100 active:scale-98 text-emerald-800 py-3 rounded-xl font-black text-xs border border-emerald-200 transition cursor-pointer"
+          >
             👤 Thành viên
           </button>
         </div>
 
-        <p className="text-[11px] text-slate-500 font-semibold text-center leading-relaxed">
-          Admin: toàn quyền (quản lý kênh, bot, xóa) • Thành viên: nhập & xem báo cáo.<br />
-          Mật khẩu cấu hình qua biến môi trường NEXT_PUBLIC_ADMIN_PASSWORD / NEXT_PUBLIC_MEMBER_PASSWORD.
+        <p className="text-[11px] text-slate-400 font-medium text-center leading-relaxed pt-2 border-t border-slate-100">
+          Admin: toàn quyền (quản lý kênh, bot, xóa) • Thành viên: nhập & xem báo cáo.
         </p>
       </div>
     </div>
