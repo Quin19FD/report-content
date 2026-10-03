@@ -3,6 +3,7 @@ import Layout from '../components/Layout';
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { type ReportEntry, type ChannelApiConfig, type SyncResult } from '../lib/types';
+import { parseReportCSV } from '../lib/csv-parser';
 export default function Home() {
   const [activeTab, setActiveTab] = useState('Facebook');
   const [rightTab, setRightTab] = useState<'REPORTS' | 'MANAGEMENT'>('REPORTS');
@@ -383,11 +384,11 @@ export default function Home() {
   // Tải file mẫu CSV để người dùng nhập bằng Excel
   const downloadCSVTemplate = () => {
     const template = [
-      "Ngày,Nền tảng,Giờ,Kênh / Page,Link,Lượt xem,Like,Comment,Share,Inbox",
-      `2026-10-03,Facebook,12:00,Acc Kevin,https://www.facebook.com/8sync/posts/123456,150,15,3,2,0`,
-      `2026-10-03,Facebook,14:00,8 Sync Dev,https://www.facebook.com/8syncdev/posts/789101,350,25,8,4,2`,
-      `2026-10-03,TikTok,18:00,oj0.8sync,https://www.tiktok.com/@oj0.8sync/video/112233,1200,85,12,6,0`,
-      `2026-10-03,YouTube,20:00,8 Sync Dev,https://youtube.com/shorts/abcdef,500,40,5,1,0`,
+      "STT,Ngày,Nền tảng,Giờ,Kênh / Page,Link,Lượt xem,Like,Comment,Share,Inbox",
+      `1,${todayStr},Facebook,12:00,8 Sync Dev,https://www.facebook.com/8syncdev/posts/122198319740779476,150,15,3,2,0`,
+      `2,${todayStr},Facebook,14:00,Acc Kevin,https://www.facebook.com/8sync/posts/789101,350,25,8,4,2`,
+      `3,${todayStr},TikTok,18:00,oj0.8sync,https://www.tiktok.com/@oj0.8sync/video/112233,1200,85,12,6,0`,
+      `4,${todayStr},YouTube,20:00,8 Sync Dev,https://youtube.com/shorts/rVK9tSdsUAo,500,40,5,1,0`,
     ].join('\n');
     const blob = new Blob(["\uFEFF" + template], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -401,110 +402,34 @@ export default function Home() {
 
   // Xử lý nội dung file CSV hoặc văn bản copy từ Excel
   const processCSVText = async (text: string) => {
-    const rawLines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-    if (rawLines.length === 0) return alert('Nội dung file hoặc ô nhập trống!');
+    if (!text || text.trim().length === 0) return alert('Nội dung file hoặc ô nhập trống!');
 
     setIsProcessingCSV(true);
-    const parsedEntries: Array<Partial<ReportEntry>> = [];
-
     try {
-      for (const line of rawLines) {
-        const delimiter = line.includes('\t') ? '\t' : (line.includes(',') ? ',' : (line.includes(';') ? ';' : null));
-
-        if (!delimiter) {
-          // Dòng chứa duy nhất 1 link bài viết
-          if (line.startsWith('http://') || line.startsWith('https://') || line.length > 5) {
-            const platform = detectPlatform(line);
-            parsedEntries.push({
-              date: todayStr,
-              time: getCurrentTime(),
-              platform,
-              link: line,
-              reach: 0,
-              likes: 0,
-              comments: 0,
-              shares: 0,
-              inboxCount: 0,
-              group: platform === 'Facebook' ? 'Acc Kevin' : '8 Sync Dev',
-            });
-          }
-          continue;
-        }
-
-        // Dòng CSV / Excel có nhiều cột
-        const cols = line.split(delimiter).map(c => c.trim().replace(/^["']|["']$/g, ''));
-        const firstCol = cols[0].toLowerCase();
-        if (firstCol.includes('stt') || firstCol.includes('ngày') || firstCol.includes('date') || firstCol.includes('nền')) {
-          continue; // Bỏ qua dòng tiêu đề
-        }
-
-        let offset = 0;
-        if (!isNaN(Number(cols[0])) && cols.length >= 7 && (cols[1].includes('-') || cols[1].includes('/'))) {
-          offset = 1; // Có cột STT ở đầu
-        }
-
-        let date = todayStr;
-        let platform = activeTab;
-        let time = getCurrentTime();
-        let group = 'Acc Kevin';
-        let link = '';
-        let reach = 0;
-        let likes = 0;
-        let comments = 0;
-        let shares = 0;
-        let inboxCount = 0;
-
-        if (cols.length >= offset + 5) {
-          date = cols[offset] || todayStr;
-          platform = cols[offset + 1] || detectPlatform(cols[offset + 4] || '');
-          time = cols[offset + 2] || getCurrentTime();
-          group = cols[offset + 3] || (platform === 'Facebook' ? 'Acc Kevin' : '8 Sync Dev');
-          link = cols[offset + 4] || '';
-          reach = parseInt(cols[offset + 5] || '0') || 0;
-          likes = parseInt(cols[offset + 6] || '0') || 0;
-          comments = parseInt(cols[offset + 7] || '0') || 0;
-          shares = parseInt(cols[offset + 8] || '0') || 0;
-          inboxCount = parseInt(cols[offset + 9] || '0') || 0;
-        } else if (cols.length >= 2) {
-          link = cols[0];
-          reach = parseInt(cols[1] || '0') || 0;
-          platform = detectPlatform(link);
-        }
-
-        if (link) {
-          parsedEntries.push({
-            date,
-            platform,
-            time,
-            group,
-            link,
-            reach,
-            likes,
-            comments,
-            shares,
-            inboxCount,
-          });
-        }
-      }
-
+      const parsedEntries = parseReportCSV(text, todayStr, getCurrentTime(), activeTab);
       if (parsedEntries.length === 0) {
-        return alert('Không tìm thấy dòng dữ liệu bài viết hợp lệ nào!');
+        return alert('Không tìm thấy dòng dữ liệu bài viết hợp lệ nào trong file/văn bản!');
       }
 
-      for (const entry of parsedEntries) {
-        await fetch('/api/reports', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(entry),
-        });
+      const res = await fetch('/api/reports', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bulk: true, entries: parsedEntries }),
+      });
+
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.error || 'Lỗi lưu dữ liệu');
       }
 
+      const resData = await res.json();
       setBulkText('');
       setShowBulk(false);
       fetchData();
-      showToast(`⚡ Đã nhập thành công ${parsedEntries.length} bài viết từ file Excel/CSV!`);
-    } catch {
-      showToast('❌ Lỗi xử lý dữ liệu file Excel/CSV');
+      showToast(`⚡ Đã nhập thành công ${resData.count || parsedEntries.length} bài (${resData.imported || 0} mới, ${resData.updated || 0} cập nhật)!`);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Lỗi xử lý file Excel/CSV';
+      showToast(`❌ ${msg}`);
     } finally {
       setIsProcessingCSV(false);
     }

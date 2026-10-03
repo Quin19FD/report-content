@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { kvGet, kvSet, kvDel, kvList, type ReportEntry } from '../../lib/db';
-
+import { normalizePostUrl } from '../../lib/types';
 interface BotState {
   date: string;
   count: number;
@@ -56,6 +56,86 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   if (req.method === 'POST') {
+    // 1. Bulk import từ file CSV / Excel / danh sách link
+    if (req.body.bulk && Array.isArray(req.body.entries)) {
+      const incomingEntries = req.body.entries as ReportEntry[];
+      if (incomingEntries.length === 0) {
+        return res.status(400).json({ error: 'Danh sách bài viết trống' });
+      }
+
+      const byDate = new Map<string, ReportEntry[]>();
+      for (const e of incomingEntries) {
+        const d = e.date || new Date().toISOString().split('T')[0];
+        const list = byDate.get(d) || [];
+        list.push({ ...e, date: d });
+        byDate.set(d, list);
+      }
+
+      let totalImported = 0;
+      let totalUpdated = 0;
+
+      for (const [dateStr, newItems] of byDate.entries()) {
+        const bucketKey = `reports-${dateStr}`;
+        const existing = (await kvGet<ReportEntry[]>(bucketKey)) || [];
+        const merged = existing.slice();
+
+        for (const item of newItems) {
+          const itemNorm = normalizePostUrl(item.link);
+          const idx = merged.findIndex((m) => {
+            if (m.id && item.id && m.id === item.id) return true;
+            if (itemNorm && m.link) {
+              return normalizePostUrl(m.link) === itemNorm;
+            }
+            return false;
+          });
+
+          const itemReach = parseInt(String(item.reach || 0)) || 0;
+          const itemLikes = parseInt(String(item.likes || 0)) || 0;
+          const itemComments = parseInt(String(item.comments || 0)) || 0;
+          const itemShares = parseInt(String(item.shares || 0)) || 0;
+          const itemInbox = parseInt(String(item.inboxCount || 0)) || 0;
+
+          if (idx >= 0) {
+            const curr = merged[idx];
+            merged[idx] = {
+              ...curr,
+              time: item.time || curr.time,
+              group: item.group || curr.group,
+              platform: item.platform || curr.platform,
+              hook: item.hook || curr.hook,
+              reach: itemReach > 0 ? itemReach : (parseInt(String(curr.reach || 0)) || 0),
+              likes: itemLikes > 0 ? itemLikes : (parseInt(String(curr.likes || 0)) || 0),
+              comments: itemComments > 0 ? itemComments : (parseInt(String(curr.comments || 0)) || 0),
+              shares: itemShares > 0 ? itemShares : (parseInt(String(curr.shares || 0)) || 0),
+              inboxCount: itemInbox > 0 ? itemInbox : (parseInt(String(curr.inboxCount || 0)) || 0),
+            };
+            totalUpdated++;
+          } else {
+            merged.push({
+              ...item,
+              id: item.id || Date.now() + Math.floor(Math.random() * 1000000),
+              reach: itemReach,
+              likes: itemLikes,
+              comments: itemComments,
+              shares: itemShares,
+              inboxCount: itemInbox,
+            });
+            totalImported++;
+          }
+        }
+
+        await kvSet(bucketKey, merged);
+      }
+
+      return res.status(200).json({
+        success: true,
+        count: totalImported + totalUpdated,
+        imported: totalImported,
+        updated: totalUpdated,
+      });
+    }
+
+    // 2. Nhập đơn lẻ (kèm chống trùng lặp theo link trong cùng ngày)
     const entryDate = req.body.date || new Date().toISOString().split('T')[0];
     const bucketKey = `reports-${entryDate}`;
 
@@ -66,9 +146,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     };
 
     const data = (await kvGet<ReportEntry[]>(bucketKey)) || [];
-    data.push(newEntry);
-    await kvSet(bucketKey, data);
+    const entryNorm = normalizePostUrl(newEntry.link);
+    const existingIdx = data.findIndex((m) => {
+      if (m.id && newEntry.id && m.id === newEntry.id) return true;
+      if (entryNorm && m.link) return normalizePostUrl(m.link) === entryNorm;
+      return false;
+    });
 
+    if (existingIdx >= 0) {
+      data[existingIdx] = { ...data[existingIdx], ...newEntry };
+    } else {
+      data.push(newEntry);
+    }
+    await kvSet(bucketKey, data);
     // Bot Notification: Chỉ gửi khi user xác nhận + tối đa 2 lượt/ngày
     let botSent = false;
     let botReason = '';

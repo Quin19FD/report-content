@@ -173,13 +173,25 @@ export async function syncAllChannels(targetDate?: string, days: number = 1): Pr
       });
       if (idx >= 0) {
         // Cập nhật chỉ số mới nhất (Reach, Views, Likes, Inbox)
+        // QUAN TRỌNG: Không được đè số 0 lên dữ liệu hợp lệ hiện có (> 0)
+        // vì API Graph Facebook hoặc YouTube có thể trả về 0 nếu thiếu quyền hoặc lượt xem chưa thống kê
+        const curr = merged[idx];
+        const incomingReach = typeof post.reach === 'number' ? post.reach : parseInt(String(post.reach || 0));
+        const incomingLikes = typeof post.likes === 'number' ? post.likes : parseInt(String(post.likes || 0));
+        const incomingComments = typeof post.comments === 'number' ? post.comments : parseInt(String(post.comments || 0));
+        const incomingShares = typeof post.shares === 'number' ? post.shares : parseInt(String(post.shares || 0));
+        const incomingInbox = typeof post.inboxCount === 'number' ? post.inboxCount : parseInt(String(post.inboxCount || 0));
+
         merged[idx] = {
-          ...merged[idx],
-          reach: post.reach,
-          inboxCount: post.inboxCount !== undefined ? post.inboxCount : merged[idx].inboxCount,
-          likes: post.likes !== undefined ? post.likes : merged[idx].likes,
-          comments: post.comments !== undefined ? post.comments : merged[idx].comments,
-          shares: post.shares !== undefined ? post.shares : merged[idx].shares,
+          ...curr,
+          pageName: post.pageName || curr.pageName,
+          group: post.group || curr.group,
+          hook: post.hook || curr.hook,
+          reach: incomingReach > 0 ? incomingReach : (parseInt(String(curr.reach || 0)) || 0),
+          inboxCount: incomingInbox > 0 ? incomingInbox : (parseInt(String(curr.inboxCount || 0)) || 0),
+          likes: incomingLikes > 0 ? incomingLikes : (parseInt(String(curr.likes || 0)) || 0),
+          comments: incomingComments > 0 ? incomingComments : (parseInt(String(curr.comments || 0)) || 0),
+          shares: incomingShares > 0 ? incomingShares : (parseInt(String(curr.shares || 0)) || 0),
         };
       } else {
         merged.push(post);

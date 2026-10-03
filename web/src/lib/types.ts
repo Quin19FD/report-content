@@ -82,11 +82,15 @@ export function normalizePostUrl(url?: string): string {
   try {
     const parsed = new URL(url.startsWith('http') ? url : `https://${url}`);
     const searchParams = new URLSearchParams(parsed.search);
-    const trackingParams = ['fbclid', 'mibextid', 'feature', 'si', '_r', '_t', 'ref', 'source', 'utm_source', 'utm_medium', 'utm_campaign'];
+    const trackingParams = [
+      'fbclid', 'mibextid', 'feature', 'si', '_r', '_t', 'ref', 'source',
+      'utm_source', 'utm_medium', 'utm_campaign', 'rdid'
+    ];
     trackingParams.forEach((p) => searchParams.delete(p));
 
     const pathname = parsed.pathname.replace(/\/+$/, '');
 
+    // YouTube: shorts, watch, youtu.be
     if (parsed.hostname.includes('youtube.com') || parsed.hostname.includes('youtu.be')) {
       if (pathname.startsWith('/shorts/')) {
         const id = pathname.split('/shorts/')[1]?.split('/')[0];
@@ -100,13 +104,32 @@ export function normalizePostUrl(url?: string): string {
       }
     }
 
-    const fbPostMatch = pathname.match(/(?:posts|reel|videos)\/([0-9a-zA-Z_]+)/);
-    if (fbPostMatch && fbPostMatch[1]) {
-      return `facebook.com/content/${fbPostMatch[1]}`;
+    // TikTok: video ID
+    if (parsed.hostname.includes('tiktok.com')) {
+      const ttMatch = pathname.match(/\/video\/(\d+)/);
+      if (ttMatch) return `tiktok.com/video/${ttMatch[1]}`;
+    }
+
+    // Facebook: posts, reel, videos, watch, share, story
+    if (
+      parsed.hostname.includes('facebook.com') ||
+      parsed.hostname.includes('fb.watch') ||
+      parsed.hostname.includes('fb.me')
+    ) {
+      if (searchParams.has('story_fbid')) {
+        return `facebook.com/content/${searchParams.get('story_fbid')}`;
+      }
+      if (searchParams.has('v')) {
+        return `facebook.com/content/${searchParams.get('v')}`;
+      }
+      const fbMatch = pathname.match(/(?:posts|reel|videos|watch|share\/[pr])\/([0-9a-zA-Z_]+)/);
+      if (fbMatch && fbMatch[1]) {
+        return `facebook.com/content/${fbMatch[1]}`;
+      }
     }
 
     const cleanSearch = searchParams.toString();
-    return `${parsed.hostname.toLowerCase()}${pathname}${cleanSearch ? '?' + cleanSearch : ''}`;
+    return `${parsed.hostname.toLowerCase().replace(/^www\./, '')}${pathname}${cleanSearch ? '?' + cleanSearch : ''}`;
   } catch {
     return url.trim().replace(/\/+$/, '').toLowerCase();
   }
