@@ -110,7 +110,9 @@ export async function fetchYouTubeChannelData(
 
     for (const v of videoDetails) {
       const published = v.snippet?.publishedAt || '';
-      const pubDate = published ? published.split('T')[0] : '';
+      const pubDate = published
+        ? new Date(published).toLocaleDateString('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' })
+        : '';
       if (days > 1) {
         if (sinceDate && pubDate < sinceDate) continue;
       } else if (targetDate && pubDate !== targetDate) {
@@ -122,9 +124,8 @@ export async function fetchYouTubeChannelData(
       const videoType = isShort ? 'Shorts' : 'Video Dài';
 
       const timeStr = published
-        ? new Date(published).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false })
+        ? new Date(published).toLocaleTimeString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit', hour12: false })
         : '12:00';
-
       const link = isShort ? `https://youtube.com/shorts/${v.id}` : `https://youtube.com/watch?v=${v.id}`;
 
       posts.push({

@@ -13,7 +13,10 @@ export async function fetchFacebookPageData(
   days: number = 1
 ): Promise<FacebookSyncOutput> {
   const pageId = config.fbPageId?.trim() || process.env.FACEBOOK_PAGE_ID?.trim() || '588402817683765';
-  const token = config.fbPageAccessToken?.trim() || process.env.FACEBOOK_PAGE_ACCESS_TOKEN?.trim() || 'EAArhbgXPxmsBSoehVisCY3BqhmtN7I6WcrsZCvwZAJdZCuIOGoRsD7AopcqyiZCubGTmvZCvskm3U4ZArZB3gamVIq0BYZBwOfiWuDTt4VJnANMXuwogqeIia9J1wlxPPIPqoj96GbusmAqA0esxpw0NQ4aP32CSkulWlfwmCU8tA3QxEThgRmvhXLwJO6lA9ZCE2cZAEDy9c2XRJs';
+  const token =
+    config.fbPageAccessToken?.trim() ||
+    process.env.FACEBOOK_PAGE_ACCESS_TOKEN?.trim() ||
+    'EAArhbgXPxmsBSlpwz6zQ1R1V1wJBO36znPZAmhXN4UPDGD9w7ObW80ZBeLbrR82d4eEM7eyDhXGF3QDt4tUZBU4bvcJej6Ry3rMJLHz1b8O1McNM2zqUadCqSvDrl02ZBwWogPGZCQEiYNo0YKSpCHhtiRuMHfy1lVj6bZCz7jy7eb5aEZCzwz5ZChyqhJVugz6uZCNAQZCd8hsmi3k0pjv6VNRGyC';
 
   if (!pageId || !token) {
     return {
@@ -39,31 +42,42 @@ export async function fetchFacebookPageData(
 
   if (!isPersonal) {
     try {
-      const accRes = await fetch(
-        `https://graph.facebook.com/v20.0/me/accounts?fields=id,name,access_token&access_token=${encodeURIComponent(token)}`
+      // Kiểm tra xem token đã là Page Token trực tiếp chưa
+      const meRes = await fetch(
+        `https://graph.facebook.com/v20.0/me?fields=id,name&access_token=${encodeURIComponent(token)}`
       );
-      if (accRes.ok) {
-        const accData = (await accRes.json()) as {
-          data?: Array<{ id: string; name: string; access_token: string }>;
-        };
-        const pages = accData.data || [];
-        if (pages.length > 0) {
-          const found =
-            pages.find(
-              (p) =>
-                p.id === effectivePageId ||
-                (config.channelName && p.name.toLowerCase().includes(config.channelName.toLowerCase())) ||
-                p.name.toLowerCase().includes('8 sync')
-            ) || pages[0];
-
-          if (found) {
-            effectivePageId = found.id;
-            effectiveToken = found.access_token || effectiveToken;
+      if (meRes.ok) {
+        const meData = (await meRes.json()) as { id?: string; name?: string };
+        if (meData.id && meData.id !== '122283732116061265') {
+          // Token này đã là Page Token xịn của Fanpage
+          effectivePageId = meData.id;
+          effectiveToken = token;
+        } else {
+          // Token là User Token, lấy Page Token tương ứng qua /me/accounts
+          const accRes = await fetch(
+            `https://graph.facebook.com/v20.0/me/accounts?fields=id,name,access_token&access_token=${encodeURIComponent(token)}`
+          );
+          if (accRes.ok) {
+            const accData = (await accRes.json()) as {
+              data?: Array<{ id: string; name: string; access_token: string }>;
+            };
+            const pages = accData.data || [];
+            const found =
+              pages.find(
+                (p) =>
+                  p.id === effectivePageId ||
+                  (config.channelName && p.name.toLowerCase().includes(config.channelName.toLowerCase())) ||
+                  p.name.toLowerCase().includes('8 sync')
+              ) || pages[0];
+            if (found) {
+              effectivePageId = found.id;
+              effectiveToken = found.access_token || effectiveToken;
+            }
           }
         }
       }
     } catch {
-      // Nếu token đã là Page Token hoặc lỗi mạng thì dùng token gốc
+      // Nếu mạng chập chờn, tiếp tục dùng token và pageId hiện có
     }
   }
 
@@ -137,16 +151,30 @@ export async function fetchFacebookPageData(
         ).catch(() => null),
       ]);
 
+      let postErrorMsg = '';
       if (postsRes && postsRes.ok) {
         const postsJson = (await postsRes.json()) as { data?: FbPostItem[] };
         rawPosts = postsJson.data || [];
+      } else if (postsRes) {
+        const errJson = (await postsRes.json().catch(() => ({}))) as { error?: { message?: string } };
+        postErrorMsg = errJson.error?.message || `HTTP ${postsRes.status}`;
       }
+
       if (videosRes && videosRes.ok) {
         const videosJson = (await videosRes.json()) as { data?: FbVideoItem[] };
         rawVideos = videosJson.data || [];
       }
-    }
 
+      // Nếu cả 2 đều lỗi kết nối/token, báo lỗi rõ ràng chứ không giấu thành 0 bài
+      if ((!postsRes || !postsRes.ok) && (!videosRes || !videosRes.ok) && postErrorMsg) {
+        return {
+          posts: [],
+          inboxes: 0,
+          status: 'ERROR',
+          message: `Lỗi kết nối Facebook Fanpage (${effectivePageId}): ${postErrorMsg}`,
+        };
+      }
+    }
 
     // 3. Thu thập URL bài viết và batch query Facebook URL Engagement (Likes, Comments, Shares)
     const allUrls: string[] = [];
@@ -188,7 +216,9 @@ export async function fetchFacebookPageData(
 
     // 4. Xử lý Video/Reels trước (vì có chỉ số Lượt xem views chính xác từ Facebook)
     for (const video of rawVideos) {
-      const createdDate = video.created_time ? video.created_time.split('T')[0] : '';
+      const createdDate = video.created_time
+        ? new Date(video.created_time).toLocaleDateString('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' })
+        : '';
       if (days > 1) {
         if (sinceDate && createdDate < sinceDate) continue;
       } else if (targetDate && createdDate !== targetDate) {
@@ -201,7 +231,7 @@ export async function fetchFacebookPageData(
       const eng = urlMap.get(fullUrl) || { likes: 0, comments: 0, shares: 0 };
 
       const timeStr = video.created_time
-        ? new Date(video.created_time).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false })
+        ? new Date(video.created_time).toLocaleTimeString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit', hour12: false })
         : '12:00';
 
       const isReel = fullUrl.includes('/reel/');
@@ -229,7 +259,9 @@ export async function fetchFacebookPageData(
 
     // 5. Xử lý bài viết thường (published_posts), chống trùng với video đã thêm
     for (const post of rawPosts) {
-      const createdDate = post.created_time ? post.created_time.split('T')[0] : '';
+      const createdDate = post.created_time
+        ? new Date(post.created_time).toLocaleDateString('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' })
+        : '';
       if (days > 1) {
         if (sinceDate && createdDate < sinceDate) continue;
       } else if (targetDate && createdDate !== targetDate) {
@@ -263,7 +295,7 @@ export async function fetchFacebookPageData(
       }
 
       const timeStr = post.created_time
-        ? new Date(post.created_time).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false })
+        ? new Date(post.created_time).toLocaleTimeString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit', hour12: false })
         : '12:00';
 
       posts.push({

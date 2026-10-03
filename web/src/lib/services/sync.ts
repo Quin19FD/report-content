@@ -31,7 +31,7 @@ async function getOrCreateChannelConfigs(): Promise<ChannelApiConfig[]> {
       channelName: '8 Sync Dev',
       enabled: true,
       fbPageId: process.env.FACEBOOK_PAGE_ID || '588402817683765',
-      fbPageAccessToken: process.env.FACEBOOK_PAGE_ACCESS_TOKEN || 'EAArhbgXPxmsBSoehVisCY3BqhmtN7I6WcrsZCvwZAJdZCuIOGoRsD7AopcqyiZCubGTmvZCvskm3U4ZArZB3gamVIq0BYZBwOfiWuDTt4VJnANMXuwogqeIia9J1wlxPPIPqoj96GbusmAqA0esxpw0NQ4aP32CSkulWlfwmCU8tA3QxEThgRmvhXLwJO6lA9ZCE2cZAEDy9c2XRJs',
+      fbPageAccessToken: process.env.FACEBOOK_PAGE_ACCESS_TOKEN || 'EAArhbgXPxmsBSlpwz6zQ1R1V1wJBO36znPZAmhXN4UPDGD9w7ObW80ZBeLbrR82d4eEM7eyDhXGF3QDt4tUZBU4bvcJej6Ry3rMJLHz1b8O1McNM2zqUadCqSvDrl02ZBwWogPGZCQEiYNo0YKSpCHhtiRuMHfy1lVj6bZCz7jy7eb5aEZCzwz5ZChyqhJVugz6uZCNAQZCd8hsmi3k0pjv6VNRGyC',
       lastSyncStatus: 'IDLE',
       lastSyncMessage: 'Chưa chạy đồng bộ lần nào',
     },
