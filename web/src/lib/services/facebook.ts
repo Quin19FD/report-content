@@ -108,18 +108,7 @@ export async function fetchFacebookPageData(
         continue;
       }
 
-      let reach = 0;
-      // 3. Lấy Reach cho từng bài nếu có quyền
-      try {
-        const postInsightUrl = `https://graph.facebook.com/v20.0/${encodeURIComponent(post.id)}/insights?metric=post_impressions_unique&access_token=${encodeURIComponent(effectiveToken)}`;
-        const pRes = await fetch(postInsightUrl);
-        if (pRes.ok) {
-          const pJson = (await pRes.json()) as { data?: Array<{ values?: Array<{ value: number }> }> };
-          reach = pJson.data?.[0]?.values?.[0]?.value || 0;
-        }
-      } catch {
-        // Fallback reach = 0 nếu không đọc được post insights
-      }
+      const reach = 0;
 
       const timeStr = post.created_time
         ? new Date(post.created_time).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false })
