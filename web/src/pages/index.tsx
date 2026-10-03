@@ -625,10 +625,31 @@ export default function Home() {
             </select>
           )}
 
+          {/* NÚT ĐỒNG BỘ KÊNH TRỰC TIẾP TRÊN TOP TOOLBAR */}
+          <button 
+            type="button"
+            disabled={isSyncing}
+            onClick={triggerManualSync}
+            className={`px-3.5 py-2 rounded-xl font-extrabold transition shadow-md text-xs flex items-center gap-1.5 ml-auto ${isSyncing ? 'bg-indigo-400 text-white cursor-wait' : 'bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-white active:scale-95'}`}
+            title="Quét dữ liệu mới nhất từ Facebook, YouTube, TikTok"
+          >
+            {isSyncing ? (
+              <>
+                <span className="animate-spin text-sm">🔄</span>
+                <span>Đang quét...</span>
+              </>
+            ) : (
+              <>
+                <span>⚡</span>
+                <span>Đồng Bộ Kênh Ngay</span>
+              </>
+            )}
+          </button>
+
           <button 
             onClick={generatePDF} 
             disabled={isExportingPDF}
-            className="bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white px-4 py-2 rounded-xl font-extrabold transition shadow-md text-xs flex items-center gap-1.5 ml-auto"
+            className="bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white px-4 py-2 rounded-xl font-extrabold transition shadow-md text-xs flex items-center gap-1.5"
           >
             <span>📄</span>
             <span>{isExportingPDF ? 'Đang xuất...' : 'Xuất PDF Báo Cáo'}</span>
@@ -967,15 +988,16 @@ export default function Home() {
               >
                 📊 Báo Cáo ({filteredEntries.length})
               </button>
-              {isAdmin && (
-                <button 
-                  type="button"
-                  onClick={() => setRightTab('MANAGEMENT')} 
-                  className={`px-4 py-2.5 rounded-xl font-black text-xs transition ${rightTab === 'MANAGEMENT' ? 'bg-slate-900 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:text-slate-900'}`}
-                >
-                  📋 Quản Lý Nhóm & Kênh
-                </button>
-              )}
+              <button 
+                type="button"
+                onClick={() => setRightTab('MANAGEMENT')} 
+                className={`px-4 py-2.5 rounded-xl font-black text-xs transition flex items-center gap-1.5 ${rightTab === 'MANAGEMENT' ? 'bg-slate-900 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:text-slate-900'}`}
+              >
+                <span>⚡ Quản Lý & Đồng Bộ Kênh</span>
+                {channelConfigs.length > 0 && (
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                )}
+              </button>
             {rightTab === 'REPORTS' && (
               <input 
                 className="border border-slate-200 px-3.5 py-2 rounded-xl text-xs font-bold w-full sm:w-44 focus:ring-2 focus:ring-sky-500" 
