@@ -1,8 +1,16 @@
+export * from './types';
+
 import { createClient, type Client } from '@libsql/client';
 import fs from 'fs';
 import path from 'path';
 
-const DATA_DIR = path.join(process.cwd(), 'data');
+const primaryDir = path.join(process.cwd(), 'data');
+const fallbackDir = path.join(process.cwd(), 'web', 'data');
+const DATA_DIR = fs.existsSync(path.join(primaryDir, 'groups.json'))
+  ? primaryDir
+  : fs.existsSync(path.join(fallbackDir, 'groups.json'))
+  ? fallbackDir
+  : primaryDir;
 
 let client: Client | null = null;
 let ready: Promise<void> | null = null;

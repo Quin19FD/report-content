@@ -1,17 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { kvGet, kvSet, kvList } from '../../lib/db';
-
-interface ReportEntry {
-  id: number;
-  date: string;
-  time?: string;
-  platform?: string;
-  reach?: string | number;
-  group?: string;
-  hook?: string;
-  link?: string;
-  [key: string]: unknown;
-}
+import { kvGet, kvSet, kvList, type ReportEntry } from '../../lib/db';
 
 interface BotState {
   date: string;
@@ -108,20 +96,27 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           dayEntries.sort((a, b) => (a.time || '').localeCompare(b.time || ''));
 
           const totalReach = dayEntries.reduce((acc, e) => acc + (parseInt(String(e.reach)) || 0), 0);
+          const totalInbox = dayEntries.reduce((acc, e) => acc + (parseInt(String(e.inboxCount)) || 0), 0);
+          const inboxRate = totalReach > 0 ? ((totalInbox / totalReach) * 100).toFixed(2) : '0';
           const fb = dayEntries.filter((e) => e.platform === 'Facebook');
           const yt = dayEntries.filter((e) => e.platform === 'YouTube');
           const tt = dayEntries.filter((e) => e.platform === 'TikTok');
 
           const lines: string[] = [
-            `📢 [ContentFlow CRM] BÁO CÁO TỔNG HỢP NGÀY ${entryDate} (Lượt ${state.count}/2)`,
+            `📢 [ContentFlow Studio] BÁO CÁO HIỆU SUẤT NGÀY ${entryDate} (Lượt ${state.count}/2)`,
             `━━━━━━━━━━━━━━━━━━`,
             `📊 Tổng: ${dayEntries.length} bài | FB: ${fb.length} | YT: ${yt.length} | TT: ${tt.length}`,
             `📈 Tổng Reach/Views: ${totalReach.toLocaleString('vi-VN')}`,
+            `💬 Tin nhắn khách: ${totalInbox.toLocaleString('vi-VN')} inbox (Tỷ lệ: ${inboxRate}%)`,
           ];
 
           if (fb.length) {
             lines.push(`━━━ 📘 Facebook ━━━`);
-            fb.forEach((e) => lines.push(`• ${e.time || '--:--'} | Reach ${(parseInt(String(e.reach)) || 0).toLocaleString('vi-VN')} | ${e.group || '--'} | ${e.hook || e.link}`));
+            fb.forEach((e) => {
+              const inboxes = parseInt(String(e.inboxCount)) || 0;
+              const inboxTag = inboxes > 0 ? ` | 💬 ${inboxes} inbox` : '';
+              lines.push(`• ${e.time || '--:--'} | Reach ${(parseInt(String(e.reach)) || 0).toLocaleString('vi-VN')}${inboxTag} | ${e.group || '--'} | ${e.hook || e.link}`);
+            });
           }
           if (yt.length) {
             lines.push(`━━━ 🎬 YouTube ━━━`);

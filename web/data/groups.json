@@ -1,34 +1,42 @@
 [
   {
-    "name": "AI Everyday",
-    "link": "https://www.facebook.com/groups/998404848367683/my_posted_content"
-  },
-  {
-    "name": "Codex VN",
-    "link": "https://www.facebook.com/groups/1528487012172019/my_posted_content"
-  },
-  {
-    "name": "Group Lập trình Python",
-    "link": "https://www.facebook.com/groups/1212071995953351/my_pending_content"
-  },
-  {
-    "name": "Nghiên AI",
-    "link": "https://www.facebook.com/groups/3262256010653927/my_pending_content"
-  },
-  {
-    "name": "Flutter Vietnam",
-    "link": "https://www.facebook.com/groups/269597763576669/my_posted_content"
+    "name": "8 Sync Dev",
+    "link": "https://www.facebook.com/8syncdev",
+    "type": "PAGE"
   },
   {
     "name": "Acc Kevin",
-    "link": "https://www.facebook.com/8sync/"
+    "link": "https://www.facebook.com/8sync/",
+    "type": "PROFILE"
   },
   {
-    "name": "8 Sync Dev",
-    "link": "https://www.facebook.com/8syncdev"
+    "name": "AI Everyday",
+    "link": "https://www.facebook.com/groups/998404848367683/my_posted_content",
+    "type": "GROUP"
+  },
+  {
+    "name": "Codex VN",
+    "link": "https://www.facebook.com/groups/1528487012172019/my_posted_content",
+    "type": "GROUP"
+  },
+  {
+    "name": "Group Lập trình Python",
+    "link": "https://www.facebook.com/groups/1212071995953351/my_pending_content",
+    "type": "GROUP"
+  },
+  {
+    "name": "Nghiên AI",
+    "link": "https://www.facebook.com/groups/3262256010653927/my_pending_content",
+    "type": "GROUP"
+  },
+  {
+    "name": "Flutter Vietnam",
+    "link": "https://www.facebook.com/groups/269597763576669/my_posted_content",
+    "type": "GROUP"
   },
   {
     "name": "Chia sẻ kiến thức học lập trình, công nghệ thông tin, AI - 8 Sync Dev",
-    "link": "https://www.facebook.com/groups/8syncdev"
+    "link": "https://www.facebook.com/groups/8syncdev",
+    "type": "GROUP"
   }
 ]
