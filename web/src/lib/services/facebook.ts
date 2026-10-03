@@ -26,10 +26,31 @@ export async function fetchFacebookPageData(
   const posts: ReportEntry[] = [];
   let inboxes = 0;
 
+  // 0. Tự động kiểm tra nếu Token là User Token thì đổi sang Page Access Token tương ứng
+  let effectiveToken = token;
+  try {
+    const accRes = await fetch(
+      `https://graph.facebook.com/v20.0/me/accounts?fields=id,name,access_token&access_token=${encodeURIComponent(token)}`
+    );
+    if (accRes.ok) {
+      const accData = (await accRes.json()) as {
+        data?: Array<{ id: string; name: string; access_token: string }>;
+      };
+      const found = accData.data?.find(
+        (p) => p.id === pageId || (config.channelName && p.name.toLowerCase().includes(config.channelName.toLowerCase()))
+      );
+      if (found?.access_token) {
+        effectiveToken = found.access_token;
+      }
+    }
+  } catch {
+    // Nếu token đã là Page Token hoặc lỗi mạng thì dùng token gốc
+  }
+
   try {
     // 1. Lấy tin nhắn mới theo ngày từ Page Insights
     try {
-      const insightUrl = `https://graph.facebook.com/v20.0/${encodeURIComponent(pageId)}/insights?metric=page_messages_new_conversations_unique&period=day&access_token=${encodeURIComponent(token)}`;
+      const insightUrl = `https://graph.facebook.com/v20.0/${encodeURIComponent(pageId)}/insights?metric=page_messages_new_conversations_unique&period=day&access_token=${encodeURIComponent(effectiveToken)}`;
       const insightRes = await fetch(insightUrl);
       if (insightRes.ok) {
         const insightJson = (await insightRes.json()) as { data?: Array<{ values?: Array<{ value: number }> }> };
@@ -41,7 +62,7 @@ export async function fetchFacebookPageData(
     }
 
     // 2. Lấy danh sách bài viết gần đây của Fanpage
-    const postsUrl = `https://graph.facebook.com/v20.0/${encodeURIComponent(pageId)}/published_posts?fields=id,message,created_time,permalink_url,shares&limit=20&access_token=${encodeURIComponent(token)}`;
+    const postsUrl = `https://graph.facebook.com/v20.0/${encodeURIComponent(pageId)}/published_posts?fields=id,message,created_time,permalink_url,shares&limit=20&access_token=${encodeURIComponent(effectiveToken)}`;
     const postsRes = await fetch(postsUrl);
 
     if (!postsRes.ok) {
