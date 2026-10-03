@@ -54,13 +54,18 @@ export async function fetchTikTokChannelData(
         const posts: ReportEntry[] = [];
 
         for (const v of rawVideos) {
-          const pubDate = v.create_time ? new Date(v.create_time * 1000).toISOString().split('T')[0] : '';
-          if (targetDate && pubDate !== targetDate) continue;
+          const pubDate = v.create_time
+            ? new Date(v.create_time * 1000).toLocaleDateString('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' })
+            : '';
+          if (days > 1) {
+            if (sinceDate && pubDate < sinceDate) continue;
+          } else if (targetDate && pubDate !== targetDate) {
+            continue;
+          }
 
           const timeStr = v.create_time
-            ? new Date(v.create_time * 1000).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false })
+            ? new Date(v.create_time * 1000).toLocaleTimeString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit', hour12: false })
             : '12:00';
-
           posts.push({
             id: Date.now() + Math.floor(Math.random() * 1000),
             date: pubDate || new Date().toISOString().split('T')[0],
@@ -118,13 +123,18 @@ export async function fetchTikTokChannelData(
         const posts: ReportEntry[] = [];
 
         for (const v of rawVideos) {
-          const pubDate = v.create_time ? new Date(v.create_time * 1000).toISOString().split('T')[0] : '';
-          if (targetDate && pubDate !== targetDate) continue;
+          const pubDate = v.create_time
+            ? new Date(v.create_time * 1000).toLocaleDateString('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' })
+            : '';
+          if (days > 1) {
+            if (sinceDate && pubDate < sinceDate) continue;
+          } else if (targetDate && pubDate !== targetDate) {
+            continue;
+          }
 
           const timeStr = v.create_time
-            ? new Date(v.create_time * 1000).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false })
+            ? new Date(v.create_time * 1000).toLocaleTimeString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit', hour12: false })
             : '12:00';
-
           posts.push({
             id: Date.now() + Math.floor(Math.random() * 1000),
             date: pubDate || new Date().toISOString().split('T')[0],
