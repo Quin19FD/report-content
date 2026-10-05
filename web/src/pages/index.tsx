@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import Layout from '../components/Layout';
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
-import { type ReportEntry, type ChannelApiConfig, type SyncResult } from '../lib/types';
+import { type ReportEntry, type ChannelApiConfig, type SyncResult, CONTENT_PILLARS, CTA_TYPES, VIDEO_TYPES, resolvePageName } from '../lib/types';
 import { parseReportCSV } from '../lib/csv-parser';
 export default function Home() {
   const [activeTab, setActiveTab] = useState('Facebook');
@@ -54,6 +54,8 @@ export default function Home() {
     ttUsername: '',
     ttAccessToken: '',
     rapidApiKey: '',
+    targetMonthlyReach: 0,
+    targetMonthlyInbox: 0,
   });
   useEffect(() => {
     if (typeof window !== 'undefined') setIsAdmin(localStorage.getItem('cf_auth') === 'admin');
@@ -72,11 +74,14 @@ export default function Home() {
     comments: '0',
     shares: '0',
     inboxCount: '0',
+    qualifiedLeads: '0',
     hook: '', 
     suggestion: '', 
     group: '',
     sharedGroup: '',
-    videoType: 'Shorts'
+    pillar: 'Chia sẻ kiến thức',
+    ctaType: '💬 Gửi tin nhắn tư vấn',
+    videoType: 'Shorts / Reels'
   });
   
   const [isShared, setIsShared] = useState(false);
@@ -245,6 +250,10 @@ export default function Home() {
         comments: parseInt(form.comments) || 0,
         shares: parseInt(form.shares) || 0,
         inboxCount: parseInt(form.inboxCount) || 0,
+        qualifiedLeads: parseInt(form.qualifiedLeads) || 0,
+        pillar: form.pillar,
+        ctaType: form.ctaType,
+        videoType: form.videoType,
         date: form.date || todayStr,
         time: submissionTime,
         id: editingId, 
@@ -278,13 +287,15 @@ export default function Home() {
       comments: '0',
       shares: '0',
       inboxCount: '0',
+      qualifiedLeads: '0',
       hook: '', 
       suggestion: '', 
       group: '', 
       sharedGroup: '',
-      videoType: 'Shorts' 
+      pillar: 'Chia sẻ kiến thức',
+      ctaType: '💬 Gửi tin nhắn tư vấn',
+      videoType: 'Shorts / Reels' 
     });
-    
     setImage(null); 
     setIsShared(false); 
     setEditingId(null);
@@ -461,18 +472,20 @@ export default function Home() {
       comments: entry.comments !== undefined ? String(entry.comments) : '0',
       shares: entry.shares !== undefined ? String(entry.shares) : '0',
       inboxCount: entry.inboxCount !== undefined ? String(entry.inboxCount) : '0',
+      qualifiedLeads: entry.qualifiedLeads !== undefined ? String(entry.qualifiedLeads) : '0',
       hook: entry.hook || '', 
       suggestion: entry.suggestion || '', 
       group: typeof entry.group === 'string' ? entry.group : '',
       sharedGroup: typeof entry.sharedGroup === 'string' ? entry.sharedGroup : '',
-      videoType: typeof entry.videoType === 'string' ? entry.videoType : 'Shorts'
+      pillar: typeof entry.pillar === 'string' ? entry.pillar : 'Chia sẻ kiến thức',
+      ctaType: typeof entry.ctaType === 'string' ? entry.ctaType : '💬 Gửi tin nhắn tư vấn',
+      videoType: typeof entry.videoType === 'string' ? entry.videoType : 'Shorts / Reels'
     });
     setIsShared(entry.isShared || false);
     setActiveTab(entry.platform || 'Facebook');
     setEditingId(entry.id);
     showToast('✏️ Đã tải dữ liệu lên form để sửa!');
   };
-
   // Executive PDF Export Engine (Hỗ trợ Nhiều Ngày/Tháng/Năm)
   const generatePDF = async () => {
     setIsExportingPDF(true);
@@ -498,68 +511,96 @@ export default function Home() {
 
       const totalReachSum = filteredEntries.reduce((acc, curr) => acc + (parseInt(String(curr.reach || 0)) || 0), 0);
       const totalInboxSum = filteredEntries.reduce((acc, curr) => acc + (parseInt(String(curr.inboxCount || 0)) || 0), 0);
+      const totalLeadsSum = filteredEntries.reduce((acc, curr) => acc + (parseInt(String(curr.qualifiedLeads || 0)) || 0), 0);
       const inboxRate = totalReachSum > 0 ? ((totalInboxSum / totalReachSum) * 100).toFixed(2) : '0';
       const fbCount = filteredEntries.filter(e => e.platform === 'Facebook').length;
       const ytCount = filteredEntries.filter(e => e.platform === 'YouTube').length;
       const ttCount = filteredEntries.filter(e => e.platform === 'TikTok').length;
-      const sharedCount = filteredEntries.filter(e => e.isShared).length;
-      const shareRate = filteredEntries.length > 0 ? Math.round((sharedCount / filteredEntries.length) * 100) : 0;
-      // 1. TOP HEADER BANNER
-      doc.setFillColor(15, 23, 42);
+
+      // Phân hệ 5.1: Tìm Fanpage có tỷ lệ chuyển đổi cao nhất & Top bài kéo inbox
+      const pageConversionMap = new Map<string, { reach: number; inbox: number }>();
+      filteredEntries.forEach(e => {
+        const pName = e.group || e.pageName || 'Khác';
+        const cur = pageConversionMap.get(pName) || { reach: 0, inbox: 0 };
+        cur.reach += parseInt(String(e.reach || 0)) || 0;
+        cur.inbox += parseInt(String(e.inboxCount || 0)) || 0;
+        pageConversionMap.set(pName, cur);
+      });
+
+      let bestPage = '--';
+      let bestPageRate = 0;
+      pageConversionMap.forEach((val, pName) => {
+        const rate = val.reach > 0 ? (val.inbox / val.reach) * 100 : 0;
+        if (rate > bestPageRate && val.inbox > 0) {
+          bestPageRate = rate;
+          bestPage = pName;
+        }
+      });
+
+      // 1. TOP HEADER BANNER (EMERALD GREEN THEME)
+      doc.setFillColor(5, 150, 105);
       doc.rect(0, 0, 297, 34, 'F');
       
-      doc.setFillColor(14, 165, 233);
-      doc.rect(14, 8, 12, 12, 'F');
+      doc.setFillColor(16, 185, 129);
+      doc.roundedRect(14, 8, 12, 12, 2, 2, 'F');
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(10);
       doc.text("CF", 17.5, 16);
 
-      doc.setFontSize(15);
+      doc.setFontSize(14);
       doc.setTextColor(255, 255, 255);
-      doc.text(`CONTENTFLOW CRM - BÁO CÁO CÔNG VIỆC (${timeLabel.toUpperCase()})`, 31, 15);
+      doc.text(`CONTENTFLOW STUDIO - BÁO CÁO HIỆU SUẤT & CHUYỂN ĐỔI (${timeLabel.toUpperCase()})`, 31, 15);
       
-      doc.setFontSize(9);
-      doc.setTextColor(148, 163, 184);
-      doc.text(`Tự động tổng hợp dữ liệu  |  Xuất báo cáo ngày: ${new Date().toLocaleDateString('vi-VN')}`, 31, 23);
+      doc.setFontSize(8.5);
+      doc.setTextColor(209, 250, 229);
+      doc.text(`Báo cáo điều hành chuẩn Meta Business Suite  |  Xuất ngày: ${new Date().toLocaleDateString('vi-VN')}`, 31, 23);
 
-      // 2. SUMMARY CARDS
-      doc.setFillColor(248, 250, 252);
-      doc.setDrawColor(226, 232, 240);
-      doc.roundedRect(14, 38, 269, 22, 3, 3, 'FD');
+      // 2. EXECUTIVE SUMMARY CARDS
+      doc.setFillColor(240, 253, 244);
+      doc.setDrawColor(167, 243, 208);
+      doc.roundedRect(14, 38, 269, 23, 3, 3, 'FD');
 
-      doc.setTextColor(51, 65, 85);
-      doc.setFontSize(9);
+      doc.setTextColor(6, 78, 59);
+      doc.setFontSize(8);
       
-      doc.text("TỔNG NỘI DUNG", 20, 45);
-      doc.setFontSize(12);
+      doc.text("TỔNG NỘI DUNG", 20, 44);
+      doc.setFontSize(11);
       doc.setTextColor(15, 23, 42);
-      doc.text(`${filteredEntries.length} Bài/Video`, 20, 53);
-      doc.setFontSize(8);
+      doc.text(`${filteredEntries.length} Bài/Video`, 20, 51);
+      doc.setFontSize(7.5);
       doc.setTextColor(100, 116, 139);
-      doc.text(`(FB: ${fbCount} | YT: ${ytCount} | TT: ${ttCount})`, 20, 57);
+      doc.text(`(FB: ${fbCount} | YT: ${ytCount} | TT: ${ttCount})`, 20, 56);
 
-      doc.setFontSize(9);
-      doc.setTextColor(51, 65, 85);
-      doc.text("TỔNG LƯỢT XEM / REACH", 90, 45);
-      doc.setFontSize(9);
-      doc.setTextColor(51, 65, 85);
-      doc.text("TIN NHẮN KHÁCH", 155, 45);
-      doc.setFontSize(12);
-      doc.setTextColor(79, 70, 229);
-      doc.text(`${totalInboxSum} Inbox`, 155, 53);
       doc.setFontSize(8);
+      doc.setTextColor(6, 78, 59);
+      doc.text("TỔNG TIẾP CẬN / REACH", 80, 44);
+      doc.setFontSize(11);
+      doc.setTextColor(5, 150, 105);
+      doc.text(`${totalReachSum.toLocaleString()} lượt`, 80, 51);
+      doc.setFontSize(7.5);
       doc.setTextColor(100, 116, 139);
-      doc.text(`Tỷ lệ: ${inboxRate}% / reach`, 155, 57);
+      doc.text(totalReachSum > 10000 ? "🔥 Mức phân phối tốt" : "○ Ổn định", 80, 56);
 
-      doc.setFontSize(9);
-      doc.setTextColor(51, 65, 85);
-      doc.text("TỶ LỆ CHIA SẺ", 228, 45);
-      doc.setFontSize(12);
-      doc.setTextColor(2, 132, 199);
-      doc.text(`${shareRate}% (${sharedCount}/${filteredEntries.length})`, 228, 53);
       doc.setFontSize(8);
+      doc.setTextColor(6, 78, 59);
+      doc.text("TIN NHẮN & CHUYỂN ĐỔI", 145, 44);
+      doc.setFontSize(11);
+      doc.setTextColor(4, 120, 87);
+      doc.text(`${totalInboxSum} Inbox  (${inboxRate}%)`, 145, 51);
+      doc.setFontSize(7.5);
+      doc.setTextColor(180, 83, 9);
+      doc.text(`⭐ ${totalLeadsSum} Qualified Leads`, 145, 56);
+
+      doc.setFontSize(8);
+      doc.setTextColor(6, 78, 59);
+      doc.text("PAGE CHUYỂN ĐỔI TỐT NHẤT", 215, 44);
+      doc.setFontSize(10);
+      doc.setTextColor(15, 23, 42);
+      doc.text(bestPage !== '--' ? `${bestPage.slice(0, 18)} (${bestPageRate.toFixed(2)}%)` : '--', 215, 51);
+      doc.setFontSize(7.5);
       doc.setTextColor(100, 116, 139);
-      doc.text(totalReachSum > 10000 ? "🔥 Rất Tốt" : "✅ Hoạt Động", 228, 57);
+      doc.text("Đo lường từ nút CTA & Fanpage", 215, 56);
+
       // 3. TABLE DATA
       const tableData = filteredEntries.map((e, index) => {
         const currReach = parseInt(String(e.reach || 0)) || 0;
@@ -567,67 +608,74 @@ export default function Home() {
         const currComments = parseInt(String(e.comments || 0)) || 0;
         const currShares = parseInt(String(e.shares || 0)) || 0;
         const currInbox = parseInt(String(e.inboxCount || 0)) || 0;
+        const currLeads = parseInt(String(e.qualifiedLeads || 0)) || 0;
+        const formatPillar = `${e.videoType || 'Shorts'} • ${e.pillar || 'Kiến thức'}`;
         return [
           (index + 1).toString(),
           e.date || '--',
           e.platform || 'N/A',
           e.time || '--:--',
           e.group || '--',
+          formatPillar,
           e.link || '',
-          (currReach ? currReach.toLocaleString() : '0') + (currReach >= 10000 ? ' (VIRAL)' : ''),
-          currLikes.toLocaleString(),
-          currComments.toLocaleString(),
-          currShares.toLocaleString(),
-          currInbox.toString()
+          currReach.toLocaleString(),
+          currLikes.toString(),
+          currComments.toString(),
+          currShares.toString(),
+          currInbox.toString(),
+          currLeads > 0 ? `⭐ ${currLeads}` : '-'
         ];
       });
 
       autoTable(doc, {
-        head: [["STT", "Ngày", "Nền tảng", "Giờ", "Kênh / Page", "Link bài viết / video", "Lượt xem", "Like", "Comment", "Share", "Inbox"]],
+        head: [["STT", "Ngày", "Nền", "Giờ", "Kênh / Page", "Định dạng & Trục", "Link bài viết", "Lượt xem", "Like", "Cmt", "Share", "Inbox", "Leads"]],
         body: tableData,
-        startY: 65,
+        startY: 66,
         theme: 'grid',
         styles: {
           font: 'Roboto',
-          fontSize: 8.5,
-          cellPadding: 3.5,
+          fontSize: 8,
+          cellPadding: 3,
           valign: 'middle',
           overflow: 'linebreak',
-          lineColor: [226, 232, 240],
-          lineWidth: 0.2
+          lineColor: [209, 250, 229],
+          lineWidth: 0.15
         },
         headStyles: {
-          fillColor: [30, 41, 59],
+          fillColor: [5, 150, 105],
           textColor: [255, 255, 255],
           fontStyle: 'normal',
           halign: 'center',
-          fontSize: 9
+          fontSize: 8.5
         },
         columnStyles: {
-          0: { cellWidth: 9, halign: 'center' },
-          1: { cellWidth: 20, halign: 'center' },
-          2: { cellWidth: 18, halign: 'center' },
-          3: { cellWidth: 14, halign: 'center' },
-          4: { cellWidth: 32 },
-          5: { cellWidth: 54, textColor: [2, 132, 199] },
-          6: { cellWidth: 24, halign: 'right' },
-          7: { cellWidth: 16, halign: 'center', textColor: [79, 70, 229] },
-          8: { cellWidth: 16, halign: 'center' },
-          9: { cellWidth: 66 }
+          0: { cellWidth: 8, halign: 'center' },
+          1: { cellWidth: 19, halign: 'center' },
+          2: { cellWidth: 16, halign: 'center' },
+          3: { cellWidth: 13, halign: 'center' },
+          4: { cellWidth: 28 },
+          5: { cellWidth: 32 },
+          6: { cellWidth: 50, textColor: [5, 150, 105] },
+          7: { cellWidth: 20, halign: 'right' },
+          8: { cellWidth: 13, halign: 'center' },
+          9: { cellWidth: 13, halign: 'center' },
+          10: { cellWidth: 13, halign: 'center' },
+          11: { cellWidth: 16, halign: 'center', textColor: [4, 120, 87] },
+          12: { cellWidth: 16, halign: 'center', textColor: [180, 83, 9] }
         },
         alternateRowStyles: {
-          fillColor: [248, 250, 252]
+          fillColor: [240, 253, 244]
         },
         didDrawPage: (data) => {
           const pageCount = doc.internal.pages.length - 1;
           doc.setFontSize(8);
           doc.setTextColor(148, 163, 184);
-          doc.text(`ContentFlow CRM • Hệ thống báo cáo đa ngày  |  Trang ${data.pageNumber} / ${pageCount}`, 14, 202);
+          doc.text(`ContentFlow Studio CRM • Báo cáo điều hành  |  Trang ${data.pageNumber} / ${pageCount}`, 14, 202);
         }
       });
 
       doc.save(`Bao_Cao_${timeLabel.replace(/\s+/g, '_')}.pdf`);
-      showToast('📄 Đã xuất file PDF báo cáo đa ngày thành công!');
+      showToast('📄 Đã xuất file PDF báo cáo điều hành thành công!');
     } catch (error) {
       alert("Lỗi xuất PDF: " + error);
     } finally {
@@ -933,26 +981,45 @@ export default function Home() {
           {/* Facebook Channel/Page & Group Selector */}
           {activeTab === 'Facebook' && (
             <div className="space-y-3">
-              <div>
-                <div className="flex justify-between items-center mb-1.5">
-                  <label className="block text-xs font-black text-slate-800 uppercase tracking-wide">
-                    🏢 Fanpage / Trang Đăng Bài
-                  </label>
-                  <span className="text-[11px] font-extrabold text-sky-600">Trang chính chủ</span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div>
+                  <div className="flex justify-between items-center mb-1.5">
+                    <label className="block text-xs font-black text-slate-800 uppercase tracking-wide">
+                      🏢 Fanpage / Trang
+                    </label>
+                    <span className="text-[10px] font-extrabold text-emerald-700">Chính chủ</span>
+                  </div>
+                  <select 
+                    className="w-full border border-slate-200 p-2.5 rounded-xl text-xs font-bold text-slate-900 bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none" 
+                    value={form.group} 
+                    onChange={e => setForm({...form, group: e.target.value})}
+                  >
+                    <option value="">-- Chọn Fanpage / Trang --</option>
+                    {groups.filter(g => g.type === 'PAGE' || g.type === 'PROFILE').map((g, i) => (
+                      <option key={i} value={g.name}>{g.type === 'PAGE' ? '📘 ' : '👤 '}{g.name}</option>
+                    ))}
+                    {groups.filter(g => g.type === 'PAGE' || g.type === 'PROFILE').length === 0 && (
+                      groups.map((g, i) => <option key={i} value={g.name}>{g.name}</option>)
+                    )}
+                  </select>
                 </div>
-                <select 
-                  className="w-full border border-slate-200 p-3 rounded-xl text-sm font-bold text-slate-900 bg-white" 
-                  value={form.group} 
-                  onChange={e => setForm({...form, group: e.target.value})}
-                >
-                  <option value="">-- Chọn Fanpage / Trang --</option>
-                  {groups.filter(g => g.type === 'PAGE' || g.type === 'PROFILE').map((g, i) => (
-                    <option key={i} value={g.name}>{g.type === 'PAGE' ? '📘 Fanpage: ' : '👤 Cá nhân: '}{g.name}</option>
-                  ))}
-                  {groups.filter(g => g.type === 'PAGE' || g.type === 'PROFILE').length === 0 && (
-                    groups.map((g, i) => <option key={i} value={g.name}>{g.name}</option>)
-                  )}
-                </select>
+
+                <div>
+                  <label className="block text-xs font-black text-slate-800 uppercase tracking-wide mb-1.5">
+                    Loại Định Dạng FB
+                  </label>
+                  <select
+                    className="w-full border border-slate-200 p-2.5 rounded-xl text-xs font-bold text-slate-900 bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none"
+                    value={form.videoType}
+                    onChange={e => setForm({...form, videoType: e.target.value})}
+                  >
+                    <option value="Shorts / Reels">⚡ Shorts / Reels</option>
+                    <option value="Post Ảnh">🖼️ Post Ảnh / Album</option>
+                    <option value="Post Text">✍️ Post Text / Link</option>
+                    <option value="Video Dài">📹 Video Dài</option>
+                    <option value="Live">🔴 Live</option>
+                  </select>
+                </div>
               </div>
 
               <div>
@@ -963,7 +1030,7 @@ export default function Home() {
                   <span className="text-[11px] font-bold text-slate-400">Đăng chéo</span>
                 </div>
                 <select 
-                  className="w-full border border-slate-200 p-2.5 rounded-xl text-xs font-semibold text-slate-700 bg-slate-50" 
+                  className="w-full border border-slate-200 p-2.5 rounded-xl text-xs font-semibold text-slate-700 bg-slate-50 focus:bg-white" 
                   value={form.sharedGroup} 
                   onChange={e => setForm({...form, sharedGroup: e.target.value})}
                 >
@@ -1008,18 +1075,63 @@ export default function Home() {
 
            {/* TikTok Specific Controls */}
            {activeTab === 'TikTok' && (
-             <div>
-               <label className="block text-xs font-black text-slate-800 uppercase tracking-wide mb-1.5">Kênh TikTok</label>
-               <select 
-                 className="w-full border border-slate-200 p-3 rounded-xl text-sm font-bold text-slate-900 bg-white" 
-                 value={form.group} 
-                 onChange={e => setForm({...form, group: e.target.value})}
-               >
-                 <option value="">-- Chọn Kênh TikTok --</option>
-                 {ttChannels.map((c, i) => <option key={i} value={c.name}>{c.name}</option>)}
-               </select>
+             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+               <div>
+                 <label className="block text-xs font-black text-slate-800 uppercase tracking-wide mb-1.5">Kênh TikTok</label>
+                 <select 
+                   className="w-full border border-slate-200 p-2.5 rounded-xl text-xs font-bold text-slate-900 bg-white" 
+                   value={form.group} 
+                   onChange={e => setForm({...form, group: e.target.value})}
+                 >
+                   <option value="">-- Chọn Kênh TikTok --</option>
+                   {ttChannels.map((c, i) => <option key={i} value={c.name}>{c.name}</option>)}
+                 </select>
+               </div>
+               <div>
+                 <label className="block text-xs font-black text-slate-800 uppercase tracking-wide mb-1.5">Loại Định Dạng TT</label>
+                 <select 
+                   className="w-full border border-slate-200 p-2.5 rounded-xl text-xs font-bold text-slate-900 bg-white" 
+                   value={form.videoType} 
+                   onChange={e => setForm({...form, videoType: e.target.value})}
+                 >
+                   <option value="Shorts / Reels">⚡ Video Ngắn (Shorts)</option>
+                   <option value="Live">🔴 Livestream</option>
+                 </select>
+               </div>
              </div>
            )}
+
+           {/* Phân hệ 3.6 & 6.1: Trục Nội Dung & Loại Kêu Gọi Hành Động (CTA) */}
+           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 bg-emerald-50/40 p-3 rounded-2xl border border-emerald-100">
+             <div>
+               <label className="block text-[10px] font-black text-emerald-950 uppercase tracking-wide mb-1">
+                 🎯 Trục Nội Dung (Pillar)
+               </label>
+               <select
+                 className="w-full border border-emerald-200 p-2 rounded-xl text-xs font-bold text-slate-800 bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none"
+                 value={form.pillar}
+                 onChange={e => setForm({ ...form, pillar: e.target.value })}
+               >
+                 {CONTENT_PILLARS.map(p => (
+                   <option key={p.id} value={p.name}>{p.icon} {p.name}</option>
+                 ))}
+               </select>
+             </div>
+             <div>
+               <label className="block text-[10px] font-black text-emerald-950 uppercase tracking-wide mb-1">
+                 📢 Lời Kêu Gọi Hành Động (CTA)
+               </label>
+               <select
+                 className="w-full border border-emerald-200 p-2 rounded-xl text-xs font-bold text-slate-800 bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none"
+                 value={form.ctaType}
+                 onChange={e => setForm({ ...form, ctaType: e.target.value })}
+               >
+                 {CTA_TYPES.map(c => (
+                   <option key={c.id} value={c.label}>{c.label}</option>
+                 ))}
+               </select>
+             </div>
+           </div>
 
            {/* Time & Reach with Presets */}
           {/* Time, Reach & Customer Inbox Count */}
@@ -1046,11 +1158,11 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Customer Inbound Messages Input */}
-            <div className="bg-emerald-50/60 p-3 rounded-2xl border border-emerald-200/70">
-              <div className="flex justify-between items-center mb-1.5">
-                <label className="block text-xs font-black text-emerald-900 uppercase tracking-wide">
-                  💬 Số Tin Nhắn Khách (Inbox từ bài viết / Reel)
+            {/* Customer Inbound Messages & Qualified Leads Input */}
+            <div className="bg-emerald-50/70 p-3.5 rounded-2xl border border-emerald-200/80 space-y-2.5">
+              <div className="flex justify-between items-center">
+                <label className="block text-xs font-black text-emerald-950 uppercase tracking-wide">
+                  💬 Tin Nhắn Khách & Tỷ Lệ Chuyển Đổi
                 </label>
                 <span className="text-[10px] font-extrabold text-emerald-800 bg-white px-2 py-0.5 rounded-full border border-emerald-200">
                   Tỷ lệ: {parseInt(form.reach) > 0 ? (((parseInt(form.inboxCount) || 0) / parseInt(form.reach)) * 100).toFixed(2) : 0}% / reach
@@ -1072,6 +1184,35 @@ export default function Home() {
                       type="button" 
                       onClick={() => setForm(prev => ({ ...prev, inboxCount: ((parseInt(prev.inboxCount) || 0) + amt).toString() }))} 
                       className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2.5 rounded-xl text-xs font-black shadow-sm transition cursor-pointer"
+                    >
+                      +{amt}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Phân hệ 2.1: Qualified Leads (Khách để lại thông tin cụ thể) */}
+              <div className="pt-2 border-t border-emerald-200/60 flex items-center justify-between gap-3">
+                <div>
+                  <span className="text-[10px] font-black text-emerald-950 uppercase block">
+                    ⭐ Khách Tiềm Năng (Qualified Leads)
+                  </span>
+                  <span className="text-[10px] text-emerald-700 font-semibold">Để lại SĐT / Email / Báo giá</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <input
+                    type="number"
+                    min="0"
+                    className="w-16 border border-emerald-200 bg-white p-1.5 rounded-lg text-xs font-black text-emerald-950 text-center"
+                    value={form.qualifiedLeads}
+                    onChange={e => setForm({ ...form, qualifiedLeads: e.target.value })}
+                  />
+                  {[1, 2, 5].map(amt => (
+                    <button
+                      key={amt}
+                      type="button"
+                      onClick={() => setForm(prev => ({ ...prev, qualifiedLeads: ((parseInt(prev.qualifiedLeads) || 0) + amt).toString() }))}
+                      className="bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 px-2 py-1 rounded-md text-[10px] font-black cursor-pointer"
                     >
                       +{amt}
                     </button>
@@ -1255,12 +1396,14 @@ export default function Home() {
                         <th className="px-2">Nền</th>
                         <th className="px-2">Giờ</th>
                         <th className="px-2">Kênh/Page</th>
+                        <th className="px-2">Định Dạng & Trục</th>
                         <th className="px-2">Link</th>
                         <th className="px-2 text-center">👁️ Lượt xem</th>
                         <th className="px-2 text-center">❤️ Like</th>
                         <th className="px-2 text-center">💬 Comment</th>
                         <th className="px-2 text-center">↗️ Share</th>
                         <th className="px-2 text-center">📥 Inbox</th>
+                        <th className="px-2 text-center">⭐ Leads</th>
                         <th className="text-right px-2">Hành động</th>
                       </tr>
                      </thead>
@@ -1281,6 +1424,14 @@ export default function Home() {
                             </td>
                             <td className="py-3 px-2 font-bold text-slate-800 text-xs">{e.time || '--:--'}</td>
                             <td className="py-3 px-2 font-semibold text-slate-700 truncate max-w-[110px] text-xs" title={e.group || '--'}>{e.group || '--'}</td>
+                            <td className="py-3 px-2">
+                              <div className="text-[10px] space-y-0.5">
+                                <span className="font-bold text-slate-700 block">{e.videoType || 'Shorts'}</span>
+                                <span className="text-[10px] font-extrabold text-emerald-800 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100 block truncate max-w-[110px]" title={e.pillar || 'Kiến thức'}>
+                                  {e.pillar || 'Kiến thức'}
+                                </span>
+                              </div>
+                            </td>
                             <td className="py-3 px-2">
                               {e.link ? (
                                 <a href={e.link.startsWith('http') ? e.link : `https://${e.link}`} target="_blank" rel="noopener noreferrer" className="text-emerald-700 font-extrabold hover:underline bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/60 px-2 py-0.5 rounded-lg text-xs">
@@ -1338,12 +1489,25 @@ export default function Home() {
                               <div className="flex items-center justify-center gap-0.5">
                                 <input 
                                   type="number" 
-                                  min="0"
+                                  min="0" 
                                   defaultValue={e.inboxCount !== undefined ? String(e.inboxCount) : '0'} 
                                   onBlur={ev => { if (ev.target.value !== (e.inboxCount !== undefined ? String(e.inboxCount) : '0')) updateEntryInline(e.id, 'inboxCount', ev.target.value); }} 
-                                  className="w-12 border border-transparent hover:border-indigo-200 focus:border-indigo-400 p-1 rounded-lg font-black text-indigo-700 text-xs bg-transparent text-center" 
+                                  className="w-12 border border-transparent hover:border-emerald-200 focus:border-emerald-400 p-1 rounded-lg font-black text-emerald-800 text-xs bg-transparent text-center" 
                                 />
                                 {(parseInt(String(e.inboxCount || 0)) || 0) > 0 && <span title="Có khách inbox" className="text-[10px]">💬</span>}
+                              </div>
+                            </td>
+                            {/* Qualified Leads */}
+                            <td className="py-2 px-1 text-center">
+                              <div className="flex items-center justify-center gap-0.5">
+                                <input 
+                                  type="number" 
+                                  min="0" 
+                                  defaultValue={e.qualifiedLeads !== undefined ? String(e.qualifiedLeads) : '0'} 
+                                  onBlur={ev => { if (ev.target.value !== (e.qualifiedLeads !== undefined ? String(e.qualifiedLeads) : '0')) updateEntryInline(e.id, 'qualifiedLeads', ev.target.value); }} 
+                                  className="w-11 border border-transparent hover:border-amber-200 focus:border-amber-400 p-1 rounded-lg font-black text-amber-900 text-xs bg-transparent text-center" 
+                                />
+                                {(parseInt(String(e.qualifiedLeads || 0)) || 0) > 0 && <span title="Khách để lại thông tin" className="text-[10px]">⭐</span>}
                               </div>
                             </td>
                             {/* Actions */}
@@ -1439,8 +1603,13 @@ export default function Home() {
                                 {cfg.platform}
                               </span>
                               <span className="font-extrabold text-slate-900 text-xs">{cfg.channelName}</span>
-                              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${cfg.lastSyncStatus === 'SUCCESS' ? 'text-emerald-700 bg-emerald-50 border border-emerald-200/60' : cfg.lastSyncStatus === 'ERROR' ? 'text-rose-700 bg-rose-50 border border-rose-200/60' : 'text-slate-500 bg-slate-100'}`}>
-                                {cfg.lastSyncStatus === 'SUCCESS' ? '● Hoạt động' : cfg.lastSyncStatus === 'ERROR' ? '● Lỗi' : '○ Sẵn sàng'}
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 ${
+                                cfg.lastSyncStatus === 'SUCCESS' ? 'text-emerald-800 bg-emerald-50 border border-emerald-200' :
+                                cfg.lastSyncStatus === 'ERROR' ? 'text-rose-700 bg-rose-50 border border-rose-200' :
+                                'text-amber-800 bg-amber-50 border border-amber-200'
+                              }`}>
+                                <span>{cfg.lastSyncStatus === 'SUCCESS' ? '🟢' : cfg.lastSyncStatus === 'ERROR' ? '🔴' : '🟡'}</span>
+                                <span>{cfg.lastSyncStatus === 'SUCCESS' ? 'API Live (Tự động)' : cfg.lastSyncStatus === 'ERROR' ? 'Lỗi Token' : 'Thủ công (Manual)'}</span>
                               </span>
                             </div>
 
@@ -1459,6 +1628,8 @@ export default function Home() {
                                     ttUsername: cfg.ttUsername || '',
                                     ttAccessToken: cfg.ttAccessToken || '',
                                     rapidApiKey: cfg.rapidApiKey || '',
+                                    targetMonthlyReach: cfg.targetMonthlyReach || 0,
+                                    targetMonthlyInbox: cfg.targetMonthlyInbox || 0,
                                   });
                                 }
                               }}
@@ -1555,6 +1726,32 @@ export default function Home() {
                                 </div>
                               )}
 
+                              {/* Phân hệ 1.1: KPI Targets tháng */}
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t border-emerald-100">
+                                <div>
+                                  <label className="text-[10px] text-slate-600 font-bold block mb-1">Target Reach Tháng (KPI):</label>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    className="w-full bg-white border border-slate-200 p-2 rounded-lg text-slate-900 font-mono text-xs focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none"
+                                    placeholder="VD: 100000..."
+                                    value={configForm.targetMonthlyReach || ''}
+                                    onChange={e => setConfigForm({ ...configForm, targetMonthlyReach: Number(e.target.value) || 0 })}
+                                  />
+                                </div>
+                                <div>
+                                  <label className="text-[10px] text-slate-600 font-bold block mb-1">Target Inbox Tháng (KPI):</label>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    className="w-full bg-white border border-slate-200 p-2 rounded-lg text-slate-900 font-mono text-xs focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none"
+                                    placeholder="VD: 200..."
+                                    value={configForm.targetMonthlyInbox || ''}
+                                    onChange={e => setConfigForm({ ...configForm, targetMonthlyInbox: Number(e.target.value) || 0 })}
+                                  />
+                                </div>
+                              </div>
+
                               <div className="flex justify-end gap-2 pt-1">
                                 <button
                                   type="button"
@@ -1566,6 +1763,8 @@ export default function Home() {
                                     ttUsername: configForm.ttUsername,
                                     ttAccessToken: configForm.ttAccessToken,
                                     rapidApiKey: configForm.rapidApiKey,
+                                    targetMonthlyReach: configForm.targetMonthlyReach,
+                                    targetMonthlyInbox: configForm.targetMonthlyInbox,
                                   })}
                                   className="bg-emerald-600 hover:bg-emerald-700 text-white font-black px-4 py-1.5 rounded-lg text-xs transition cursor-pointer shadow-sm shadow-emerald-600/20"
                                 >

@@ -12,6 +12,7 @@ export interface ReportEntry {
   likes?: string | number;
   comments?: string | number;
   shares?: string | number;
+  qualifiedLeads?: string | number;
   hook?: string;
   link?: string;
   videoType?: string;
@@ -20,9 +21,11 @@ export interface ReportEntry {
   suggestion?: string;
   pillar?: string;
   ctaType?: string;
+  trafficSource?: 'FYP_FEED' | 'FOLLOWERS' | 'SEARCH' | 'SEEDING' | 'OTHER';
   retention3sRate?: number;
   completionRate?: number;
   avgWatchTimeSeconds?: number;
+  syncSource?: 'AUTO_API' | 'MANUAL';
   [key: string]: unknown;
 }
 
@@ -37,6 +40,10 @@ export interface ChannelApiConfig {
   platform: 'Facebook' | 'YouTube' | 'TikTok';
   channelName: string;
   enabled: boolean;
+  type?: 'OWNED_PAGE' | 'PROFILE' | 'SEEDING_GROUP' | 'CHANNEL';
+  targetMonthlyReach?: number;
+  targetMonthlyInbox?: number;
+  connectionHealth?: 'API_LIVE' | 'MANUAL' | 'ERROR';
   
   // Facebook
   fbPageId?: string;
@@ -55,7 +62,6 @@ export interface ChannelApiConfig {
   lastSyncStatus?: 'SUCCESS' | 'ERROR' | 'IDLE' | 'SKIPPED';
   lastSyncMessage?: string;
 }
-
 export interface SyncResult {
   success: boolean;
   timestamp: string;
@@ -76,6 +82,30 @@ export function resolvePageName(entry: ReportEntry): string {
   const name = entry.pageName || entry.group || 'Chưa phân loại';
   return name.trim();
 }
+
+export const CONTENT_PILLARS = [
+  { id: 'KNOWLEDGE', name: 'Chia sẻ kiến thức', icon: '💡', keywords: ['kiến thức', 'hướng dẫn', 'tips', 'bí quyết', 'lập trình', 'code', 'docker', 'ai', 'công nghệ'] },
+  { id: 'CASE_STUDY', name: 'Case Study thực chiến', icon: '🔬', keywords: ['case study', 'thực chiến', 'dự án', 'kinh nghiệm', 'tối ưu', 'review'] },
+  { id: 'TRENDS', name: 'Tin tức & Xu hướng', icon: '🔥', keywords: ['tin tức', 'ra mắt', 'model', 'update', 'trend', 'mới nhất', 'gpt', 'deepseek'] },
+  { id: 'PRODUCT', name: 'Giới thiệu sản phẩm & Khóa học', icon: '🚀', keywords: ['sản phẩm', 'khóa học', 'đăng ký', 'tuyển sinh', 'dịch vụ', 'tool', 'phần mềm'] },
+  { id: 'OTHER', name: 'Khác / Hỏi đáp', icon: '💬', keywords: [] }
+];
+
+export const CTA_TYPES = [
+  { id: 'MESSAGE', label: '💬 Gửi tin nhắn tư vấn' },
+  { id: 'COMMENT_DOC', label: '📥 Comment nhận tài liệu' },
+  { id: 'BIO_LINK', label: '🔗 Nhấp link trong Bio / Mô tả' },
+  { id: 'WEBSITE', label: '🌐 Truy cập Website' },
+  { id: 'NONE', label: '☕ Tự nhiên (Không kèm CTA)' }
+];
+
+export const VIDEO_TYPES = [
+  'Shorts / Reels',
+  'Video Dài',
+  'Post Ảnh',
+  'Post Text',
+  'Live'
+];
 
 export function normalizePostUrl(url?: string): string {
   if (!url) return '';

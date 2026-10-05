@@ -47,6 +47,9 @@ const HOURS_24 = Array.from({ length: 24 }, (_, i) => i);
 export default function Analytics() {
   const [reports, setReports] = useState<ReportEntry[]>([]);
   const [prevReports, setPrevReports] = useState<ReportEntry[]>([]);
+  const [timePreset, setTimePreset] = useState<'7D' | '28D' | '90D' | 'MONTH' | 'CUSTOM'>('28D');
+  const [customStart, setCustomStart] = useState('');
+  const [customEnd, setCustomEnd] = useState('');
   const [filterMonth, setFilterMonth] = useState(new Date().getMonth() + 1);
   const [filterYear, setFilterYear] = useState(new Date().getFullYear());
   const [selectedPageFilter, setSelectedPageFilter] = useState('ALL');
@@ -58,20 +61,39 @@ export default function Analytics() {
   const [selectedHeatmapCell, setSelectedHeatmapCell] = useState<HeatmapCell | null>(null);
 
   useEffect(() => {
-    fetch(`/api/reports?filterType=MONTH&month=${filterMonth}&year=${filterYear}`)
+    let query = '';
+    let prevQuery = '';
+
+    if (timePreset === '7D') {
+      query = `?filterType=DAYS&days=7`;
+      prevQuery = `?filterType=DAYS&days=14`;
+    } else if (timePreset === '28D') {
+      query = `?filterType=DAYS&days=28`;
+      prevQuery = `?filterType=DAYS&days=56`;
+    } else if (timePreset === '90D') {
+      query = `?filterType=DAYS&days=90`;
+      prevQuery = `?filterType=DAYS&days=180`;
+    } else if (timePreset === 'CUSTOM' && customStart && customEnd) {
+      query = `?filterType=RANGE&startDate=${customStart}&endDate=${customEnd}`;
+    } else {
+      query = `?filterType=MONTH&month=${filterMonth}&year=${filterYear}`;
+      const pm = filterMonth === 1 ? 12 : filterMonth - 1;
+      const py = filterMonth === 1 ? filterYear - 1 : filterYear;
+      prevQuery = `?filterType=MONTH&month=${pm}&year=${py}`;
+    }
+
+    fetch(`/api/reports${query}`)
       .then(res => res.json())
       .then((data: ReportEntry[]) => setReports(Array.isArray(data) ? data : []))
       .catch(err => console.error("Lỗi tải báo cáo analytics", err));
 
-    // Tháng trước
-    const pm = filterMonth === 1 ? 12 : filterMonth - 1;
-    const py = filterMonth === 1 ? filterYear - 1 : filterYear;
-    fetch(`/api/reports?filterType=MONTH&month=${pm}&year=${py}`)
-      .then(res => res.json())
-      .then((data: ReportEntry[]) => setPrevReports(Array.isArray(data) ? data : []))
-      .catch(() => setPrevReports([]));
-  }, [filterMonth, filterYear]);
-
+    if (prevQuery) {
+      fetch(`/api/reports${prevQuery}`)
+        .then(res => res.json())
+        .then((data: ReportEntry[]) => setPrevReports(Array.isArray(data) ? data : []))
+        .catch(() => setPrevReports([]));
+    }
+  }, [timePreset, filterMonth, filterYear, customStart, customEnd]);
   // Danh sách các Page / Kênh độc lập có trong dữ liệu
   const distinctPages = useMemo(() => {
     const map = new Map<string, { name: string; count: number; platform: string }>();
@@ -112,6 +134,14 @@ export default function Analytics() {
   const prevInbox = activePrevReports.reduce((acc, r) => acc + (parseInt(String(r.inboxCount)) || 0), 0);
   const inboxDiff = prevInbox > 0 ? Math.round(((totalInbox - prevInbox) / prevInbox) * 100) : (totalInbox > 0 ? 100 : 0);
   const inboxRate = totalReach > 0 ? ((totalInbox / totalReach) * 100).toFixed(2) : '0';
+
+  // Phân hệ 2.1: Messaging Rate trên Tương tác & Leads chất lượng
+  const totalLikes = activeReports.reduce((acc, r) => acc + (parseInt(String(r.likes || 0)) || 0), 0);
+  const totalComments = activeReports.reduce((acc, r) => acc + (parseInt(String(r.comments || 0)) || 0), 0);
+  const totalShares = activeReports.reduce((acc, r) => acc + (parseInt(String(r.shares || 0)) || 0), 0);
+  const totalEngagements = totalLikes + totalComments + totalShares;
+  const inboxEngagementRate = totalEngagements > 0 ? ((totalInbox / totalEngagements) * 100).toFixed(2) : '0';
+  const qualifiedLeadsSum = activeReports.reduce((acc, r) => acc + (parseInt(String(r.qualifiedLeads || 0)) || 0), 0);
 
   const sharedCount = activeReports.filter(r => r.isShared).length;
   const viralCount = activeReports.filter(r => (parseInt(String(r.reach)) || 0) >= 10000).length;
@@ -369,6 +399,42 @@ export default function Analytics() {
     });
   }, [activeReports]);
 
+  const periodLabel = useMemo(() => {
+    if (timePreset === '7D') return '7 ngày qua';
+    if (timePreset === '28D') return '28 ngày qua (Chuẩn Meta Studio)';
+    if (timePreset === '90D') return '90 ngày qua (Quý)';
+    if (timePreset === 'CUSTOM') return `${customStart || '...'} đến ${customEnd || '...'}`;
+    return `Tháng ${filterMonth}/${filterYear}`;
+  }, [timePreset, filterMonth, filterYear, customStart, customEnd]);
+
+  // Phân hệ 3.5: Phân tích Nguồn Lưu lượng (Traffic Source Breakdown)
+  const trafficSources = useMemo(() => {
+    let fyp = 0, followers = 0, search = 0, seeding = 0;
+    activeReports.forEach((r) => {
+      const reach = parseInt(String(r.reach || 0)) || 0;
+      const vType = String(r.videoType || '').toLowerCase();
+      const link = String(r.link || '').toLowerCase();
+      const src = r.trafficSource;
+
+      if (src === 'FYP_FEED' || vType.includes('short') || vType.includes('reel') || link.includes('/reel/') || link.includes('tiktok.com')) {
+        fyp += reach;
+      } else if (src === 'SEEDING' || r.isShared || r.sharedGroup || r.entityType === 'GROUP' || link.includes('/groups/')) {
+        seeding += reach;
+      } else if (src === 'SEARCH' || vType.includes('dài') || link.includes('youtube.com/watch')) {
+        search += reach;
+      } else {
+        followers += reach;
+      }
+    });
+
+    const sum = fyp + followers + search + seeding || 1;
+    return [
+      { id: 'FYP', label: 'Khám phá & Đề xuất (FYP / Reels)', count: fyp, pct: Math.round((fyp / sum) * 100), color: 'bg-emerald-600', textColor: 'text-emerald-700', icon: '✨' },
+      { id: 'FOLLOWERS', label: 'Người theo dõi trang (Followers)', count: followers, pct: Math.round((followers / sum) * 100), color: 'bg-teal-600', textColor: 'text-teal-700', icon: '👥' },
+      { id: 'SEARCH', label: 'Tìm kiếm từ khóa (Search Traffic)', count: search, pct: Math.round((search / sum) * 100), color: 'bg-sky-600', textColor: 'text-sky-700', icon: '🔍' },
+      { id: 'SEEDING', label: 'Cộng đồng & Nhóm chia sẻ (Seeding)', count: seeding, pct: Math.round((seeding / sum) * 100), color: 'bg-amber-500', textColor: 'text-amber-700', icon: '🚀' },
+    ];
+  }, [activeReports]);
   return (
     <Layout>
       {/* HEADER WITH TIME & PAGE FILTERS */}
@@ -403,21 +469,77 @@ export default function Analytics() {
             </select>
           </div>
 
-          {/* Lọc Tháng & Năm */}
-          <select 
-            value={filterMonth} 
-            onChange={e => setFilterMonth(Number(e.target.value))}
-            className="bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl text-slate-800 focus:bg-white"
-          >
-            {Array.from({length: 12}, (_, i) => <option key={i+1} value={i+1}>Tháng {i+1}</option>)}
-          </select>
-          <select 
-            value={filterYear} 
-            onChange={e => setFilterYear(Number(e.target.value))}
-            className="bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl text-slate-800 focus:bg-white"
-          >
-            {[2025, 2026, 2027].map(y => <option key={y} value={y}>Năm {y}</option>)}
-          </select>
+          {/* Multi-tier Studio Time Presets */}
+          <div className="flex bg-slate-100/80 rounded-xl p-1 font-extrabold text-xs">
+            <button
+              onClick={() => setTimePreset('7D')}
+              className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${timePreset === '7D' ? 'bg-emerald-600 text-white shadow-sm font-black' : 'text-slate-600 hover:text-emerald-900'}`}
+            >
+              7 Ngày
+            </button>
+            <button
+              onClick={() => setTimePreset('28D')}
+              className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${timePreset === '28D' ? 'bg-emerald-600 text-white shadow-sm font-black' : 'text-slate-600 hover:text-emerald-900'}`}
+              title="28 ngày qua — Chuẩn Meta Business Suite & TikTok Studio"
+            >
+              28 Ngày
+            </button>
+            <button
+              onClick={() => setTimePreset('90D')}
+              className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${timePreset === '90D' ? 'bg-emerald-600 text-white shadow-sm font-black' : 'text-slate-600 hover:text-emerald-900'}`}
+            >
+              90 Ngày
+            </button>
+            <button
+              onClick={() => setTimePreset('MONTH')}
+              className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${timePreset === 'MONTH' ? 'bg-emerald-600 text-white shadow-sm font-black' : 'text-slate-600 hover:text-emerald-900'}`}
+            >
+              Theo Tháng
+            </button>
+            <button
+              onClick={() => setTimePreset('CUSTOM')}
+              className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${timePreset === 'CUSTOM' ? 'bg-emerald-600 text-white shadow-sm font-black' : 'text-slate-600 hover:text-emerald-900'}`}
+            >
+              Tùy Chọn
+            </button>
+          </div>
+
+          {timePreset === 'MONTH' && (
+            <div className="flex items-center gap-1.5">
+              <select 
+                value={filterMonth} 
+                onChange={e => setFilterMonth(Number(e.target.value))}
+                className="bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl text-slate-800 focus:bg-white"
+              >
+                {Array.from({length: 12}, (_, i) => <option key={i+1} value={i+1}>Tháng {i+1}</option>)}
+              </select>
+              <select 
+                value={filterYear} 
+                onChange={e => setFilterYear(Number(e.target.value))}
+                className="bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl text-slate-800 focus:bg-white"
+              >
+                {[2025, 2026, 2027].map(y => <option key={y} value={y}>Năm {y}</option>)}
+              </select>
+            </div>
+          )}
+
+          {timePreset === 'CUSTOM' && (
+            <div className="flex items-center gap-1.5">
+              <input
+                type="date"
+                value={customStart}
+                onChange={e => setCustomStart(e.target.value)}
+                className="bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-xl text-xs text-slate-800 focus:bg-white"
+              />
+              <span className="text-slate-400">→</span>
+              <input
+                type="date"
+                value={customEnd}
+                onChange={e => setCustomEnd(e.target.value)}
+                className="bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-xl text-xs text-slate-800 focus:bg-white"
+              />
+            </div>
+          )}
         </div>
       </div>
 
@@ -468,13 +590,10 @@ export default function Analytics() {
               <span>💬</span> Tin Nhắn Khách
             </div>
             <div className="text-3xl font-black text-emerald-950 mt-1">{totalInbox.toLocaleString()}</div>
-            <div className="text-xs font-black text-emerald-700 mt-1 flex items-center gap-1.5">
-              <span>Tỷ lệ: {inboxRate}%</span>
-              {prevInbox > 0 && (
-                <span className={inboxDiff >= 0 ? 'text-emerald-600' : 'text-rose-600'}>
-                  ({inboxDiff >= 0 ? '▲' : '▼'}{Math.abs(inboxDiff)}%)
-                </span>
-              )}
+            <div className="text-[11px] font-bold text-emerald-800 mt-1 flex flex-col gap-0.5">
+              <span>🎯 {inboxRate}% / reach</span>
+              <span className="text-teal-700">⚡ {inboxEngagementRate}% / tương tác</span>
+              {qualifiedLeadsSum > 0 && <span className="text-amber-800 font-extrabold">⭐️ {qualifiedLeadsSum} Qualified Leads</span>}
             </div>
           </div>
           <div className="w-11 h-11 bg-emerald-600 text-white rounded-2xl flex items-center justify-center font-black text-xl shadow-md shadow-emerald-600/20">
@@ -664,6 +783,42 @@ export default function Analytics() {
           ))}
           <text x={padX} y={padY - 8} fontSize="11" fill="#94a3b8">{maxDayReach.toLocaleString()} reach</text>
         </svg>
+      </div>
+
+      {/* PHÂN HỆ 3.5: PHÂN TÍCH NGUỒN LƯU LƯỢNG (TRAFFIC SOURCE BREAKDOWN) */}
+      <div className="bg-white p-6 rounded-3xl border border-emerald-100 shadow-2xs mb-6 space-y-4">
+        <div className="flex flex-wrap items-center justify-between pb-3 border-b border-emerald-100 gap-2">
+          <div>
+            <h2 className="font-black text-base text-slate-900 flex items-center gap-2">
+              <span>🌐</span> Phân Tích Nguồn Lưu Lượng (Traffic Source Breakdown)
+            </h2>
+            <p className="text-xs text-slate-500 font-semibold mt-0.5">
+              Tỷ lệ phân bổ tiếp cận theo Đề xuất tự nhiên (FYP/Reels), Người theo dõi (Followers), Tìm kiếm và Cộng đồng
+            </p>
+          </div>
+          <span className="text-xs bg-emerald-50 text-emerald-800 font-black px-3 py-1 rounded-xl border border-emerald-200/60">
+            {periodLabel}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-1">
+          {trafficSources.map((src) => (
+            <div key={src.id} className="p-4 rounded-2xl bg-emerald-50/40 border border-emerald-100 space-y-2.5">
+              <div className="flex items-center justify-between text-xs font-black text-slate-800">
+                <span className="flex items-center gap-1.5">
+                  <span>{src.icon}</span> {src.label}
+                </span>
+                <span className={`${src.textColor} font-black text-sm`}>{src.pct}%</span>
+              </div>
+              <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                <div className={`${src.color} h-2 rounded-full transition-all duration-700`} style={{ width: `${src.pct}%` }}></div>
+              </div>
+              <div className="text-[11px] text-slate-500 font-semibold text-right">
+                {src.count.toLocaleString()} lượt tiếp cận
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* PHÂN HỆ MỚI 1: 24x7 POSTING TIME HEATMAP */}
@@ -899,19 +1054,19 @@ export default function Analytics() {
         </div>
       </div>
 
-      {/* TOP CONTENT KÉO INBOX NHIỀU NHẤT & CLICK ĐỂ XEM CHI TIẾT */}
+      {/* BẢNG XẾP HẠNG TOP NỘI DUNG KÉO TIN NHẮN (TOP INBOX DRIVER LEADERBOARD) */}
       <div className="bg-white p-6 rounded-3xl border border-emerald-100 shadow-2xs mb-6">
-        <div className="flex flex-wrap items-center justify-between pb-3 border-b border-slate-100 mb-4">
+        <div className="flex flex-wrap items-center justify-between pb-3 border-b border-emerald-100 mb-4 gap-2">
           <div>
             <h2 className="font-black text-base text-slate-900 flex items-center gap-2">
-              <span>🏆</span> Top Nội Dung Kéo Tin Nhắn Khách & Chuyển Đổi Tốt Nhất
+              <span>🏆</span> Bảng Xếp Hạng Nội Dung Kéo Tin Nhắn Khách (Top Inbox Drivers)
             </h2>
             <p className="text-xs text-slate-500 font-semibold mt-0.5">
-              Click vào bài viết bất kỳ để mở <strong>Modal Video Inspector</strong> xem chi tiết chẩn đoán
+              Phân tích Hook mở đầu, CTA chuyển đổi và khung giờ đăng của các bài mang lại nhiều khách nhất ({periodLabel})
             </p>
           </div>
-          <span className="text-xs text-indigo-700 font-black bg-indigo-50 px-3 py-1 rounded-xl">
-            Click bài để soi chỉ số 🔍
+          <span className="text-xs text-emerald-800 font-black bg-emerald-50 border border-emerald-200/60 px-3 py-1 rounded-xl">
+            Click bài để soi phễu chi tiết 🔍
           </span>
         </div>
 
@@ -924,39 +1079,50 @@ export default function Analytics() {
             const pInbox = parseInt(String(post.inboxCount)) || 0;
             const pReach = parseInt(String(post.reach)) || 0;
             const pRate = pReach > 0 ? ((pInbox / pReach) * 100).toFixed(2) : '0';
+            const pLeads = parseInt(String(post.qualifiedLeads || 0)) || 0;
 
             return (
               <div 
                 key={idx} 
                 onClick={() => setInspectingPost(post)}
-                className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-sky-50/40 hover:border-sky-300 transition cursor-pointer space-y-3 group"
+                className="p-4 rounded-2xl border border-emerald-100 bg-white hover:bg-emerald-50/30 hover:border-emerald-300 transition cursor-pointer space-y-3 shadow-2xs group"
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-white border border-slate-200 text-slate-700">
-                    {post.date} • {post.time || '--:--'}
-                  </span>
-                  <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded ${post.platform === 'Facebook' ? 'bg-sky-100 text-sky-800' : post.platform === 'YouTube' ? 'bg-red-100 text-red-800' : 'bg-slate-900 text-white'}`}>
+                  <div className="flex items-center gap-1.5">
+                    <span className={`w-6 h-6 rounded-lg flex items-center justify-center font-black text-xs ${idx === 0 ? 'bg-amber-100 text-amber-900 border border-amber-300' : idx === 1 ? 'bg-slate-200 text-slate-800' : idx === 2 ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-800'}`}>
+                      #{idx + 1}
+                    </span>
+                    <span className="text-[10px] font-bold text-slate-500">
+                      {post.date} • {post.time || '--:--'}
+                    </span>
+                  </div>
+                  <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-md ${post.platform === 'Facebook' ? 'bg-sky-50 text-sky-700 border border-sky-200/60' : post.platform === 'YouTube' ? 'bg-red-50 text-red-700 border border-red-200/60' : 'bg-emerald-800 text-white'}`}>
                     {post.platform}
                   </span>
                 </div>
 
-                <div className="font-extrabold text-sm text-slate-900 line-clamp-2 group-hover:text-sky-700 transition">
+                <div className="font-extrabold text-sm text-slate-900 line-clamp-2 group-hover:text-emerald-700 transition">
                   {post.hook || post.group || 'Bài viết chưa có ghi chú hook'}
                 </div>
 
                 <div className="text-xs text-slate-500 font-bold flex items-center justify-between">
                   <span>🏢 {resolvePageName(post)}</span>
-                  <span className="text-sky-600 font-black text-xs">Soi chi tiết 🔍</span>
+                  {post.ctaType && (
+                    <span className="text-[10px] text-teal-800 bg-teal-50 px-2 py-0.5 rounded border border-teal-200/60 font-black">
+                      {post.ctaType}
+                    </span>
+                  )}
                 </div>
 
-                <div className="pt-2 border-t border-slate-200/80 flex items-center justify-between text-xs">
+                <div className="pt-2.5 border-t border-emerald-50 flex items-center justify-between text-xs">
                   <div>
                     <span className="text-slate-400 font-bold">Reach: </span>
                     <span className="font-black text-slate-800">{pReach.toLocaleString()}</span>
                   </div>
-                  <div className="flex items-center gap-1.5 bg-indigo-50 text-indigo-900 px-2.5 py-1 rounded-lg font-black">
+                  <div className="flex items-center gap-1.5 bg-emerald-50 text-emerald-900 px-2.5 py-1 rounded-xl font-black border border-emerald-200/60">
                     <span>💬 {pInbox} Inbox</span>
-                    <span className="text-[10px] text-indigo-600 font-bold">({pRate}%)</span>
+                    <span className="text-[10px] text-emerald-700 font-bold">({pRate}%)</span>
+                    {pLeads > 0 && <span className="text-amber-800 text-[10px]">⭐ {pLeads}</span>}
                   </div>
                 </div>
               </div>

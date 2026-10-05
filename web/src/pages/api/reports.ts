@@ -37,21 +37,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
 
     // Filter Logic
-    const today = new Date().toISOString().split('T')[0];
+    // Filter Logic chuẩn múi giờ Việt Nam
+    const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' });
 
     if (date) {
       allEntries = allEntries.filter((e) => e.date === date);
     } else if (filterType === 'TODAY') {
       allEntries = allEntries.filter((e) => e.date === today);
+    } else if (filterType === 'DAYS') {
+      const days = parseInt(String(req.query.days || '7'), 10) || 7;
+      const sinceDate = new Date(Date.now() - days * 86400000).toLocaleDateString('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' });
+      allEntries = allEntries.filter((e) => e.date && e.date >= sinceDate && e.date <= today);
     } else if (filterType === 'MONTH' && month && year) {
       const targetMonth = `${year}-${String(month).padStart(2, '0')}`;
       allEntries = allEntries.filter((e) => e.date && e.date.startsWith(targetMonth));
     } else if (filterType === 'YEAR' && year) {
       allEntries = allEntries.filter((e) => e.date && e.date.startsWith(`${year}-`));
     } else if (filterType === 'RANGE' && startDate && endDate) {
-      allEntries = allEntries.filter((e) => e.date >= (startDate as string) && e.date <= (endDate as string));
+      allEntries = allEntries.filter((e) => e.date && e.date >= (startDate as string) && e.date <= (endDate as string));
     }
-
     return res.status(200).json(allEntries);
   }
 
@@ -192,31 +196,64 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           const yt = dayEntries.filter((e) => e.platform === 'YouTube');
           const tt = dayEntries.filter((e) => e.platform === 'TikTok');
 
+          // Phân nhóm theo Fanpage / Kênh
+          const fbMap = new Map<string, { posts: number; reach: number; inboxes: number }>();
+
+          fb.forEach((e) => {
+            const page = e.group || e.pageName || 'Khác';
+            const cur = fbMap.get(page) || { posts: 0, reach: 0, inboxes: 0 };
+            cur.posts += 1;
+            cur.reach += parseInt(String(e.reach)) || 0;
+            cur.inboxes += parseInt(String(e.inboxCount)) || 0;
+            fbMap.set(page, cur);
+          });
+
+          // Top 3 bài viết kéo inbox nhiều nhất
+          const topInboxEntries = dayEntries
+            .filter((e) => (parseInt(String(e.inboxCount)) || 0) > 0)
+            .sort((a, b) => (parseInt(String(b.inboxCount)) || 0) - (parseInt(String(a.inboxCount)) || 0))
+            .slice(0, 3);
+
           const lines: string[] = [
             `📢 [ContentFlow Studio] BÁO CÁO HIỆU SUẤT NGÀY ${entryDate} (Lượt ${state.count}/2)`,
-            `━━━━━━━━━━━━━━━━━━`,
-            `📊 Tổng: ${dayEntries.length} bài | FB: ${fb.length} | YT: ${yt.length} | TT: ${tt.length}`,
-            `📈 Tổng Reach/Views: ${totalReach.toLocaleString('vi-VN')}`,
-            `💬 Tin nhắn khách: ${totalInbox.toLocaleString('vi-VN')} inbox (Tỷ lệ: ${inboxRate}%)`,
+            `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`,
+            `📊 TỔNG QUAN: ${dayEntries.length} nội dung | ${totalReach.toLocaleString('vi-VN')} Reach | ${totalInbox.toLocaleString('vi-VN')} Tin nhắn khách`,
+            `🎯 TỶ LỆ CHUYỂN ĐỔI INBOX TRUNG BÌNH: ${inboxRate}%`,
+            ``,
           ];
 
-          if (fb.length) {
-            lines.push(`━━━ 📘 Facebook ━━━`);
-            fb.forEach((e) => {
-              const inboxes = parseInt(String(e.inboxCount)) || 0;
-              const inboxTag = inboxes > 0 ? ` | 💬 ${inboxes} inbox` : '';
-              lines.push(`• ${e.time || '--:--'} | Reach ${(parseInt(String(e.reach)) || 0).toLocaleString('vi-VN')}${inboxTag} | ${e.group || '--'} | ${e.hook || e.link}`);
+          if (fbMap.size > 0) {
+            lines.push(`🏢 HIỆU SUẤT THEO FANPAGE & KÊNH:`);
+            fbMap.forEach((val, pageName) => {
+              const pRate = val.reach > 0 ? ((val.inboxes / val.reach) * 100).toFixed(2) : '0';
+              const fire = val.inboxes >= 5 ? ' 🔥' : '';
+              lines.push(`├── 📘 ${pageName}: ${val.posts} bài | ${val.reach.toLocaleString('vi-VN')} Reach | 💬 ${val.inboxes} Inbox (${pRate}%)${fire}`);
             });
-          }
-          if (yt.length) {
-            lines.push(`━━━ 🎬 YouTube ━━━`);
-            yt.forEach((e) => lines.push(`• ${e.time || '--:--'} | Views ${(parseInt(String(e.reach)) || 0).toLocaleString('vi-VN')} | ${e.group || '--'} | ${e.hook || e.link}`));
-          }
-          if (tt.length) {
-            lines.push(`━━━ 🎵 TikTok ━━━`);
-            tt.forEach((e) => lines.push(`• ${e.time || '--:--'} | Views ${(parseInt(String(e.reach)) || 0).toLocaleString('vi-VN')} | ${e.group || '--'} | ${e.hook || e.link}`));
+            lines.push(``);
           }
 
+          if (yt.length > 0 || tt.length > 0) {
+            lines.push(`🎬 YOUTUBE & TIKTOK:`);
+            if (yt.length > 0) {
+              const ytViews = yt.reduce((acc, e) => acc + (parseInt(String(e.reach)) || 0), 0);
+              lines.push(`├── 🎬 YouTube: ${yt.length} videos | ${ytViews.toLocaleString('vi-VN')} Views`);
+            }
+            if (tt.length > 0) {
+              const ttViews = tt.reduce((acc, e) => acc + (parseInt(String(e.reach)) || 0), 0);
+              lines.push(`└── 🎵 TikTok: ${tt.length} videos | ${ttViews.toLocaleString('vi-VN')} Views`);
+            }
+            lines.push(``);
+          }
+
+          if (topInboxEntries.length > 0) {
+            lines.push(`🏆 TOP BÀI VIẾT KÉO INBOX NHIỀU NHẤT:`);
+            topInboxEntries.forEach((e, i) => {
+              const title = e.hook ? `"${e.hook.slice(0, 45)}..."` : (e.link || '');
+              const inboxes = parseInt(String(e.inboxCount)) || 0;
+              lines.push(`${i + 1}. ${title} — ${e.group || e.pageName || e.platform} (${inboxes} inbox)`);
+            });
+            lines.push(``);
+          }
           // Đính kèm cảnh báo Kế Hoạch sắp đến hạn (≤3 ngày, tiến độ <50%)
           try {
             const plansRaw = await kvGet<PlanItem[] | { tasks?: PlanItem[] }>('plans');
