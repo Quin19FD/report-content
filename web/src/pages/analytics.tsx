@@ -301,6 +301,16 @@ export default function Analytics() {
       .sort((a, b) => b.reach + b.inbox * 500 - (a.reach + a.inbox * 500))
       .slice(0, 3);
   }, [heatmapMatrix]);
+  // Danh sách bài viết thuộc khung giờ được chọn trên Heatmap
+  const cellPosts = useMemo(() => {
+    if (!selectedHeatmapCell) return [];
+    return activeReports.filter((r) => {
+      if (!r.date || !r.time) return false;
+      const dayIdx = (new Date(r.date).getDay() + 6) % 7;
+      const hour = parseInt(r.time.split(':')[0], 10);
+      return dayIdx === selectedHeatmapCell.dayIndex && hour === selectedHeatmapCell.hour;
+    });
+  }, [activeReports, selectedHeatmapCell]);
 
   // PHÂN HỆ MỚI 2: VIDEO 3S RETENTION & COMPLETION FUNNEL
   const videoRetentionStats: VideoRetentionStat = useMemo(() => {
@@ -899,23 +909,52 @@ export default function Analytics() {
 
         {/* Selected Slot Information Inspector */}
         {selectedHeatmapCell && (
-          <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <span className="font-black text-slate-900">Chi tiết khung giờ:</span>
-              <span className="bg-sky-100 text-sky-800 font-black px-2 py-0.5 rounded">
-                {selectedHeatmapCell.dayName} lúc {selectedHeatmapCell.hour}:00 - {selectedHeatmapCell.hour + 1}:00
-              </span>
-              <span>• Đã đăng <strong>{selectedHeatmapCell.count}</strong> bài</span>
-              <span>• Tổng Reach: <strong>{selectedHeatmapCell.reach.toLocaleString()}</strong></span>
-              <span>• Tin nhắn: <strong className="text-indigo-600">{selectedHeatmapCell.inbox}</strong> inbox</span>
+          <div className="p-4 bg-emerald-50/70 border border-emerald-200 rounded-2xl text-xs space-y-3 shadow-2xs">
+            <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-emerald-200/60">
+              <div className="flex items-center gap-2">
+                <span className="font-black text-slate-900">Chi tiết khung giờ:</span>
+                <span className="bg-emerald-600 text-white font-black px-2.5 py-0.5 rounded-lg shadow-2xs">
+                  {selectedHeatmapCell.dayName} lúc {selectedHeatmapCell.hour}:00 - {selectedHeatmapCell.hour + 1}:00
+                </span>
+                <span>• Đã đăng <strong>{selectedHeatmapCell.count}</strong> bài</span>
+                <span>• Tổng Reach: <strong>{selectedHeatmapCell.reach.toLocaleString()}</strong></span>
+                <span>• Tin nhắn: <strong className="text-emerald-800">{selectedHeatmapCell.inbox}</strong> inbox</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedHeatmapCell(null)}
+                className="text-xs text-slate-500 hover:text-slate-800 font-bold bg-white px-2 py-0.5 rounded-lg border border-emerald-200 cursor-pointer"
+              >
+                Đóng ✕
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={() => setSelectedHeatmapCell(null)}
-              className="text-[11px] text-slate-400 hover:text-slate-600 font-bold"
-            >
-              Đóng ✕
-            </button>
+
+            {/* Danh sách bài đăng thực tế trong khung giờ này */}
+            {cellPosts.length === 0 ? (
+              <div className="text-slate-400 italic">Không có bài viết chi tiết trong khung giờ này</div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 pt-1">
+                {cellPosts.map((p, idx) => (
+                  <div
+                    key={idx}
+                    onClick={() => setInspectingPost(p)}
+                    className="bg-white p-2.5 rounded-xl border border-emerald-100 hover:border-emerald-300 hover:bg-emerald-50/30 transition cursor-pointer space-y-1.5 shadow-2xs"
+                  >
+                    <div className="flex items-center justify-between text-[10px]">
+                      <span className="font-bold text-slate-500">{p.date} • {p.time}</span>
+                      <span className="font-extrabold text-emerald-800">{p.platform}</span>
+                    </div>
+                    <div className="font-bold text-xs text-slate-900 truncate" title={p.hook || p.link}>
+                      {p.hook || p.link || 'Bài viết'}
+                    </div>
+                    <div className="flex items-center justify-between text-[11px] pt-1 border-t border-slate-100">
+                      <span>Reach: <strong>{(parseInt(String(p.reach || 0))).toLocaleString()}</strong></span>
+                      <span className="text-emerald-700 font-bold">💬 {p.inboxCount || 0} inbox</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -923,8 +962,8 @@ export default function Analytics() {
       {/* PHÂN HỆ MỚI 2: VIDEO 3S RETENTION & COMPLETION FUNNEL */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-6">
         {/* Retention Funnel Visual */}
-        <div className="lg:col-span-7 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div className="lg:col-span-7 bg-white p-6 rounded-3xl border border-emerald-100 shadow-2xs space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-emerald-100">
             <div>
               <h2 className="font-black text-base text-slate-900 flex items-center gap-2">
                 <span>⚡</span> Phễu Giữ Chân Video & Tỷ Lệ Rơi 3 Giây Đầu
@@ -933,11 +972,59 @@ export default function Analytics() {
                 Đánh giá chất lượng câu Hook mở đầu và tỷ lệ xem hết (Completion Rate)
               </p>
             </div>
-            <span className="text-xs font-black bg-amber-50 text-amber-800 px-3 py-1 rounded-xl">
+            <span className="text-xs font-black bg-emerald-50 text-emerald-800 border border-emerald-200/60 px-3 py-1 rounded-xl">
               {videoRetentionStats.totalVideos} Videos / Shorts
             </span>
           </div>
 
+          {/* Smooth SVG Audience Retention Curve */}
+          <div className="bg-emerald-50/40 p-4 rounded-2xl border border-emerald-100 space-y-2">
+            <div className="flex justify-between items-center text-xs font-black text-slate-800">
+              <span className="flex items-center gap-1.5 text-emerald-950">
+                <span>📈</span> Đường Cong Giữ Chân Người Xem (Audience Retention Curve)
+              </span>
+              <span className="text-[10px] text-emerald-700 bg-white px-2 py-0.5 rounded-full border border-emerald-200">
+                Chuẩn YouTube & Meta Studio
+              </span>
+            </div>
+
+            <svg viewBox="0 0 500 120" className="w-full h-28">
+              <defs>
+                <linearGradient id="retGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#10b981" stopOpacity="0.35" />
+                  <stop offset="100%" stopColor="#10b981" stopOpacity="0.02" />
+                </linearGradient>
+              </defs>
+              <line x1="20" y1="20" x2="480" y2="20" stroke="#d1fae5" strokeDasharray="3 3" strokeWidth="1" />
+              <line x1="20" y1="60" x2="480" y2="60" stroke="#d1fae5" strokeDasharray="3 3" strokeWidth="1" />
+              <line x1="20" y1="100" x2="480" y2="100" stroke="#e2e8f0" strokeWidth="1" />
+
+              {(() => {
+                const r3s = videoRetentionStats.avg3sRetention;
+                const rComp = videoRetentionStats.avgCompletionRate;
+                const y0 = 15;
+                const y3s = 100 - (r3s * 0.85);
+                const yMid = 100 - (r3s * 0.55);
+                const yEnd = 100 - (rComp * 0.85);
+                const dPath = `M 25 ${y0} C 60 ${y0}, 90 ${y3s}, 130 ${y3s} C 200 ${y3s}, 280 ${yMid}, 350 ${yMid} C 410 ${yMid}, 450 ${yEnd}, 475 ${yEnd}`;
+                const dArea = `${dPath} L 475 100 L 25 100 Z`;
+                return (
+                  <g>
+                    <path d={dArea} fill="url(#retGrad)" />
+                    <path d={dPath} fill="none" stroke="#059669" strokeWidth="2.5" strokeLinecap="round" />
+                    <circle cx="25" cy={y0} r="3.5" fill="#059669" />
+                    <circle cx="130" cy={y3s} r="4.5" fill="#f59e0b" />
+                    <circle cx="350" cy={yMid} r="3.5" fill="#059669" />
+                    <circle cx="475" cy={yEnd} r="4.5" fill="#047857" />
+                  </g>
+                );
+              })()}
+              <text x="25" y="114" fontSize="9" fontWeight="bold" fill="#64748b" textAnchor="middle">0s (100%)</text>
+              <text x="130" y="114" fontSize="9" fontWeight="900" fill="#b45309" textAnchor="middle">3s Hook ({videoRetentionStats.avg3sRetention}%)</text>
+              <text x="350" y="114" fontSize="9" fontWeight="bold" fill="#64748b" textAnchor="middle">15s - 50%</text>
+              <text x="475" y="114" fontSize="9" fontWeight="900" fill="#047857" textAnchor="middle">Hết ({videoRetentionStats.avgCompletionRate}%)</text>
+            </svg>
+          </div>
           {/* 4-Stage Visual Funnel */}
           <div className="space-y-3 py-2">
             <div>

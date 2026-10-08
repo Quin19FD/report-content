@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import Layout from '../components/Layout';
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -169,6 +169,28 @@ export default function Home() {
     setEditingConfigId(null);
   };
 
+  const [testingChannelId, setTestingChannelId] = useState<string | null>(null);
+
+  const testChannelConnection = async (cfg: ChannelApiConfig) => {
+    setTestingChannelId(cfg.id);
+    try {
+      const res = await fetch(`/api/cron/sync-daily?days=1`, {
+        method: 'POST',
+        headers: { 'x-admin-auth': 'admin' },
+      });
+      const data = (await res.json()) as { success?: boolean; error?: string; result?: SyncResult };
+      const ch = data.result?.channels?.find((c) => c.id === cfg.id);
+      if (ch && ch.status === 'SUCCESS') {
+        showToast(`🟢 Kênh ${cfg.channelName}: Kết nối tốt! (${ch.message || 'Sẵn sàng'})`);
+      } else {
+        showToast(`⚠️ Kênh ${cfg.channelName}: ${ch?.message || data.error || 'Lỗi kết nối'}`);
+      }
+    } catch {
+      showToast(`❌ Lỗi kiểm tra kết nối kênh ${cfg.channelName}`);
+    } finally {
+      setTestingChannelId(null);
+    }
+  };
   // AUTOMATION 1: Smart URL Detection & Auto Platform/Type Switch
   const handleLinkChange = (url: string) => {
     setForm(prev => ({ ...prev, link: url }));
@@ -683,23 +705,79 @@ export default function Home() {
     }
   };
 
-  // Metrics calculation based on filtered entries
-  const filteredEntries = entries.filter(e => {
-    const matchPlatform = filterPlatform === 'ALL' || e.platform === filterPlatform;
-    const matchSearch = searchQuery === '' || 
-      (e.link && e.link.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (e.hook && e.hook.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (e.group && e.group.toLowerCase().includes(searchQuery.toLowerCase()));
-    return matchPlatform && matchSearch;
-  });
+  // Phân hệ 6.2: Bộ lọc nhanh & Sắp xếp chuyên sâu
+  type QuickFilterType = 'ALL' | 'HAS_INBOX' | 'VIRAL' | 'HAS_LEADS' | 'SHARED' | 'HIGH_ER';
+  type SortByType = 'NEWEST' | 'OLDEST' | 'REACH_DESC' | 'INBOX_DESC' | 'LIKES_DESC' | 'ER_DESC';
 
-  // Metrics calculation based on filtered entries
+  const [quickFilter, setQuickFilter] = useState<QuickFilterType>('ALL');
+  const [filterPillar, setFilterPillar] = useState('ALL');
+  const [sortBy, setSortBy] = useState<SortByType>('NEWEST');
+  const filteredEntries = useMemo(() => {
+    let list = entries.filter((e) => {
+      const matchPlatform = filterPlatform === 'ALL' || e.platform === filterPlatform;
+      const matchSearch =
+        searchQuery === '' ||
+        (e.link && e.link.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (e.hook && e.hook.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (e.group && e.group.toLowerCase().includes(searchQuery.toLowerCase()));
+
+      const matchPillar = filterPillar === 'ALL' || e.pillar === filterPillar;
+
+      const reach = parseInt(String(e.reach || 0)) || 0;
+      const inboxes = parseInt(String(e.inboxCount || 0)) || 0;
+      const leads = parseInt(String(e.qualifiedLeads || 0)) || 0;
+      const likes = parseInt(String(e.likes || 0)) || 0;
+      const cmt = parseInt(String(e.comments || 0)) || 0;
+      const shares = parseInt(String(e.shares || 0)) || 0;
+      const eng = likes + cmt + shares;
+      const er = reach > 0 ? (eng / reach) * 100 : 0;
+
+      let matchQuick = true;
+      if (quickFilter === 'HAS_INBOX') matchQuick = inboxes > 0;
+      else if (quickFilter === 'VIRAL') matchQuick = reach >= 10000;
+      else if (quickFilter === 'HAS_LEADS') matchQuick = leads > 0;
+      else if (quickFilter === 'SHARED') matchQuick = !!e.isShared;
+      else if (quickFilter === 'HIGH_ER') matchQuick = er >= 3;
+
+      return matchPlatform && matchSearch && matchPillar && matchQuick;
+    });
+
+    list = list.slice().sort((a, b) => {
+      const aReach = parseInt(String(a.reach || 0)) || 0;
+      const bReach = parseInt(String(b.reach || 0)) || 0;
+      const aInbox = parseInt(String(a.inboxCount || 0)) || 0;
+      const bInbox = parseInt(String(b.inboxCount || 0)) || 0;
+      const aLikes = parseInt(String(a.likes || 0)) || 0;
+      const bLikes = parseInt(String(b.likes || 0)) || 0;
+      const aEng = aLikes + (parseInt(String(a.comments || 0)) || 0) + (parseInt(String(a.shares || 0)) || 0);
+      const bEng = bLikes + (parseInt(String(b.comments || 0)) || 0) + (parseInt(String(b.shares || 0)) || 0);
+      const aEr = aReach > 0 ? aEng / aReach : 0;
+      const bEr = bReach > 0 ? bEng / bReach : 0;
+
+      if (sortBy === 'REACH_DESC') return bReach - aReach;
+      if (sortBy === 'INBOX_DESC') return bInbox - aInbox;
+      if (sortBy === 'LIKES_DESC') return bLikes - aLikes;
+      if (sortBy === 'ER_DESC') return bEr - aEr;
+      if (sortBy === 'OLDEST') {
+        return `${a.date || ''} ${a.time || ''}`.localeCompare(`${b.date || ''} ${b.time || ''}`);
+      }
+      return `${b.date || ''} ${b.time || ''}`.localeCompare(`${a.date || ''} ${a.time || ''}`);
+    });
+
+    return list;
+  }, [entries, filterPlatform, searchQuery, filterPillar, quickFilter, sortBy]);
+
   const totalPosts = filteredEntries.length;
   const totalReachSum = filteredEntries.reduce((acc, curr) => acc + (parseInt(String(curr.reach || 0)) || 0), 0);
   const totalInboxSum = filteredEntries.reduce((acc, curr) => acc + (parseInt(String(curr.inboxCount || 0)) || 0), 0);
+  const totalLeadsSum = filteredEntries.reduce((acc, curr) => acc + (parseInt(String(curr.qualifiedLeads || 0)) || 0), 0);
+  const totalLikesSum = filteredEntries.reduce((acc, curr) => acc + (parseInt(String(curr.likes || 0)) || 0), 0);
+  const totalCommentsSum = filteredEntries.reduce((acc, curr) => acc + (parseInt(String(curr.comments || 0)) || 0), 0);
+  const totalSharesSum = filteredEntries.reduce((acc, curr) => acc + (parseInt(String(curr.shares || 0)) || 0), 0);
+  const totalEngagementsSum = totalLikesSum + totalCommentsSum + totalSharesSum;
+  const avgEngagementRate = totalReachSum > 0 ? ((totalEngagementsSum / totalReachSum) * 100).toFixed(2) : '0';
   const inboxConversionRate = totalReachSum > 0 ? ((totalInboxSum / totalReachSum) * 100).toFixed(2) : '0';
   const sharedCount = filteredEntries.filter(e => e.isShared).length;
-
   return (
     <Layout>
       {/* Toast Notification */}
@@ -1388,7 +1466,65 @@ export default function Home() {
                  </button>
                ))}
               </div>
-               <div className="max-h-[460px] overflow-auto pr-1">
+
+              {/* Quick Filters Bar & Sort Controls */}
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                <div className="flex flex-wrap items-center gap-1 text-[11px] font-bold">
+                  {[
+                    { id: 'ALL' as const, label: 'Tất cả' },
+                    { id: 'HAS_INBOX' as const, label: '💬 Có Inbox' },
+                    { id: 'HAS_LEADS' as const, label: '⭐ Có Lead' },
+                    { id: 'VIRAL' as const, label: '🔥 Viral ≥10k' },
+                    { id: 'HIGH_ER' as const, label: '⚡ ER ≥3%' },
+                    { id: 'SHARED' as const, label: '🚀 Đã Share' },
+                  ].map((qf) => (
+                    <button
+                      key={qf.id}
+                      type="button"
+                      onClick={() => setQuickFilter(qf.id)}
+                      className={`px-2.5 py-1 rounded-lg transition cursor-pointer ${quickFilter === qf.id ? 'bg-emerald-600 text-white font-black shadow-2xs' : 'bg-white border border-emerald-100 text-slate-600 hover:text-emerald-900'}`}
+                    >
+                      {qf.label}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex items-center gap-1.5 text-xs font-bold">
+                  <select
+                    value={filterPillar}
+                    onChange={(e) => setFilterPillar(e.target.value)}
+                    className="bg-white border border-emerald-100 px-2.5 py-1 rounded-xl text-slate-700 text-xs font-bold outline-none"
+                  >
+                    <option value="ALL">🎯 Tất cả Trục</option>
+                    {CONTENT_PILLARS.map((p) => (
+                      <option key={p.id} value={p.name}>{p.name}</option>
+                    ))}
+                  </select>
+
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value as SortByType)}
+                    className="bg-white border border-emerald-100 px-2.5 py-1 rounded-xl text-slate-700 text-xs font-black outline-none"
+                  >
+                    <option value="NEWEST">⏱️ Mới nhất</option>
+                    <option value="REACH_DESC">📈 Nhiều Reach nhất</option>
+                    <option value="INBOX_DESC">💬 Nhiều Inbox nhất</option>
+                    <option value="LIKES_DESC">❤️ Nhiều Like nhất</option>
+                    <option value="ER_DESC">⚡ ER cao nhất</option>
+                    <option value="OLDEST">⏳ Cũ nhất</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Mini Quick KPI Strip */}
+              <div className="flex flex-wrap items-center justify-between p-2.5 bg-emerald-50/70 rounded-xl border border-emerald-100 text-xs font-black text-emerald-950 mb-3 shadow-2xs">
+                <span className="flex items-center gap-1">📊 <strong>{filteredEntries.length}</strong> bài lọc</span>
+                <span className="flex items-center gap-1 text-emerald-700">📈 <strong>{totalReachSum.toLocaleString()}</strong> Reach</span>
+                <span className="flex items-center gap-1 text-teal-800">💬 <strong>{totalInboxSum.toLocaleString()}</strong> Inbox ({inboxConversionRate}%)</span>
+                <span className="flex items-center gap-1 text-amber-900">⭐ <strong>{totalLeadsSum}</strong> Leads</span>
+                <span className="flex items-center gap-1 text-emerald-800">⚡ ER TB: <strong>{avgEngagementRate}%</strong></span>
+              </div>
+
+              <div className="max-h-[460px] overflow-auto pr-1">
                  <table className="w-full min-w-[680px] text-left text-sm">
                      <thead className="sticky top-0 bg-emerald-50/90 backdrop-blur-xs shadow-2xs z-10">
                       <tr className="border-b border-emerald-100 text-emerald-950 font-black uppercase text-[11px] tracking-wide">
@@ -1441,17 +1577,30 @@ export default function Home() {
                                 <span className="text-slate-300">--</span>
                               )}
                             </td>
-                            {/* Lượt xem / Reach */}
+                            {/* Lượt xem / Reach & ER */}
                             <td className="py-2 px-1 text-center">
-                              <div className="flex items-center justify-center gap-0.5">
-                                <input
-                                  type="number"
-                                  min="0"
-                                  defaultValue={e.reach !== undefined ? String(e.reach) : '0'}
-                                  onBlur={ev => { if (ev.target.value !== (e.reach !== undefined ? String(e.reach) : '0')) updateEntryInline(e.id, 'reach', ev.target.value); }}
-                                  className="w-16 border border-transparent hover:border-slate-200 focus:border-sky-400 p-1 rounded-lg font-black text-slate-900 text-xs bg-transparent text-center"
-                                />
-                                {(parseInt(String(e.reach || 0)) || 0) >= 10000 && <span title="Viral ≥ 10k" className="text-[11px]">🔥</span>}
+                              <div className="flex flex-col items-center justify-center gap-0.5">
+                                <div className="flex items-center justify-center gap-0.5">
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    defaultValue={e.reach !== undefined ? String(e.reach) : '0'}
+                                    onBlur={ev => { if (ev.target.value !== (e.reach !== undefined ? String(e.reach) : '0')) updateEntryInline(e.id, 'reach', ev.target.value); }}
+                                    className="w-16 border border-transparent hover:border-slate-200 focus:border-emerald-500 p-1 rounded-lg font-black text-slate-900 text-xs bg-transparent text-center"
+                                  />
+                                  {(parseInt(String(e.reach || 0)) || 0) >= 10000 && <span title="Viral ≥ 10k" className="text-[11px]">🔥</span>}
+                                </div>
+                                {(() => {
+                                  const r = parseInt(String(e.reach || 0)) || 0;
+                                  const eng = (parseInt(String(e.likes || 0)) || 0) + (parseInt(String(e.comments || 0)) || 0) + (parseInt(String(e.shares || 0)) || 0);
+                                  const er = r > 0 ? (eng / r) * 100 : 0;
+                                  if (er <= 0) return null;
+                                  return (
+                                    <span className={`text-[9px] px-1 py-0.2 rounded font-black ${er >= 5 ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : er >= 2 ? 'bg-teal-50 text-teal-800 border border-teal-200' : 'text-slate-400'}`}>
+                                      ER {er.toFixed(1)}%
+                                    </span>
+                                  );
+                                })()}
                               </div>
                             </td>
                             {/* Like */}
@@ -1613,31 +1762,82 @@ export default function Home() {
                               </span>
                             </div>
 
-                            <button
-                              type="button"
-                              onClick={() => {
-                                if (isEditing) {
-                                  setEditingConfigId(null);
-                                } else {
-                                  setEditingConfigId(cfg.id);
-                                  setConfigForm({
-                                    fbPageId: cfg.fbPageId || '',
-                                    fbPageAccessToken: cfg.fbPageAccessToken || '',
-                                    ytChannelId: cfg.ytChannelId || '',
-                                    ytApiKey: cfg.ytApiKey || '',
-                                    ttUsername: cfg.ttUsername || '',
-                                    ttAccessToken: cfg.ttAccessToken || '',
-                                    rapidApiKey: cfg.rapidApiKey || '',
-                                    targetMonthlyReach: cfg.targetMonthlyReach || 0,
-                                    targetMonthlyInbox: cfg.targetMonthlyInbox || 0,
-                                  });
-                                }
-                              }}
-                              className="text-xs text-emerald-700 font-extrabold hover:underline cursor-pointer"
-                            >
-                              {isEditing ? 'Đóng ✕' : '⚙️ Cấu hình Token'}
-                            </button>
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                disabled={testingChannelId === cfg.id}
+                                onClick={() => testChannelConnection(cfg)}
+                                className="text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200/80 px-2 py-0.5 rounded-lg font-bold transition cursor-pointer"
+                                title="Kiểm tra kết nối API trực tiếp"
+                              >
+                                {testingChannelId === cfg.id ? 'Đang test...' : '🔍 Test API'}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (isEditing) {
+                                    setEditingConfigId(null);
+                                  } else {
+                                    setEditingConfigId(cfg.id);
+                                    setConfigForm({
+                                      fbPageId: cfg.fbPageId || '',
+                                      fbPageAccessToken: cfg.fbPageAccessToken || '',
+                                      ytChannelId: cfg.ytChannelId || '',
+                                      ytApiKey: cfg.ytApiKey || '',
+                                      ttUsername: cfg.ttUsername || '',
+                                      ttAccessToken: cfg.ttAccessToken || '',
+                                      rapidApiKey: cfg.rapidApiKey || '',
+                                      targetMonthlyReach: cfg.targetMonthlyReach || 0,
+                                      targetMonthlyInbox: cfg.targetMonthlyInbox || 0,
+                                    });
+                                  }
+                                }}
+                                className="text-xs text-emerald-700 font-extrabold hover:underline cursor-pointer"
+                              >
+                                {isEditing ? 'Đóng ✕' : '⚙️ Cấu hình Token'}
+                              </button>
+                            </div>
                           </div>
+
+                          {/* Phân hệ 1.1: Thanh đo tiến độ đạt KPI tháng */}
+                          {(() => {
+                            if (!cfg.targetMonthlyReach && !cfg.targetMonthlyInbox) return null;
+                            const chEntries = entries.filter((e) => {
+                              const name = e.group || e.pageName || '';
+                              return name.toLowerCase().includes(cfg.channelName.toLowerCase()) || (cfg.platform === 'TikTok' && e.platform === 'TikTok');
+                            });
+                            const actualReach = chEntries.reduce((acc, e) => acc + (parseInt(String(e.reach || 0)) || 0), 0);
+                            const actualInbox = chEntries.reduce((acc, e) => acc + (parseInt(String(e.inboxCount || 0)) || 0), 0);
+                            const reachPct = cfg.targetMonthlyReach && cfg.targetMonthlyReach > 0 ? Math.min(100, Math.round((actualReach / cfg.targetMonthlyReach) * 100)) : null;
+                            const inboxPct = cfg.targetMonthlyInbox && cfg.targetMonthlyInbox > 0 ? Math.min(100, Math.round((actualInbox / cfg.targetMonthlyInbox) * 100)) : null;
+
+                            return (
+                              <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 space-y-1.5 text-[11px]">
+                                {reachPct !== null && (
+                                  <div>
+                                    <div className="flex justify-between font-bold text-slate-700 mb-0.5">
+                                      <span>KPI Reach tháng:</span>
+                                      <span className="font-black text-emerald-700">{actualReach.toLocaleString()} / {(cfg.targetMonthlyReach || 0).toLocaleString()} ({reachPct}%)</span>
+                                    </div>
+                                    <div className="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden">
+                                      <div className="bg-emerald-600 h-1.5 rounded-full" style={{ width: `${reachPct}%` }}></div>
+                                    </div>
+                                  </div>
+                                )}
+                                {inboxPct !== null && (
+                                  <div>
+                                    <div className="flex justify-between font-bold text-slate-700 mb-0.5">
+                                      <span>KPI Inbox tháng:</span>
+                                      <span className="font-black text-teal-800">{actualInbox.toLocaleString()} / {(cfg.targetMonthlyInbox || 0).toLocaleString()} ({inboxPct}%)</span>
+                                    </div>
+                                    <div className="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden">
+                                      <div className="bg-teal-600 h-1.5 rounded-full" style={{ width: `${inboxPct}%` }}></div>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })()}
 
                           {/* Form sửa Token nếu đang bấm mở */}
                           {isEditing && (

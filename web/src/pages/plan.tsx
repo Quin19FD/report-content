@@ -122,6 +122,18 @@ export default function Plan() {
   const updateRowInline = (id: number, field: keyof PlanRow, value: string) => {
     const updated = rows.map(r => r.id === id ? { ...r, [field]: value } : r);
     setRows(updated);
+    savePlanToBackend(updated);
+  };
+
+  const moveTaskStatus = (id: number, newStatus: string, newProgress?: string) => {
+    const updated = rows.map(r => {
+      if (r.id !== id) return r;
+      const prog = newProgress !== undefined ? newProgress : (newStatus === 'Done' ? '100' : newStatus === 'In Progress' && r.progress === '0' ? '30' : r.progress);
+      return { ...r, status: newStatus, progress: prog };
+    });
+    setRows(updated);
+    savePlanToBackend(updated);
+    showToast(`⚡ Đã chuyển mục tiêu sang "${newStatus}"!`);
   };
 
   const deleteRow = (id: number) => {
@@ -673,86 +685,120 @@ export default function Plan() {
       {/* VIEW MODE 3: KANBAN BOARD VIEW */}
       {activeView === 'KANBAN' && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-slate-100/90 p-4 rounded-2xl border border-slate-200 space-y-3">
-            <div className="flex justify-between items-center pb-2 border-b border-slate-200">
-              <h3 className="font-black text-xs text-amber-700 uppercase tracking-wide flex items-center gap-1.5">
-                <span>⏳</span> Planning ({planningTasks})
+          {/* CỘT 1: PLANNING */}
+          <div className="bg-amber-50/60 p-4 rounded-3xl border border-amber-200/80 space-y-3.5 shadow-2xs">
+            <div className="flex justify-between items-center pb-2 border-b border-amber-200/60">
+              <h3 className="font-black text-xs text-amber-900 uppercase tracking-wide flex items-center gap-1.5">
+                <span>⏳</span> Lên Kế Hoạch ({planningTasks})
               </h3>
+              <span className="text-[10px] font-bold text-amber-700 bg-white px-2 py-0.5 rounded-full border border-amber-200">Chuẩn bị</span>
             </div>
             
             <div className="space-y-3">
-              {rows.filter(r => r.status === 'Planning').map(r => (
-                <div key={r.id} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-2">
-                  <div className="flex justify-between items-start">
-                    <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-700">{r.category}</span>
-                    <button onClick={() => deleteRow(r.id)} className="text-slate-400 hover:text-rose-600 text-xs font-bold">✕</button>
+              {rows.filter(r => r.status === 'Planning').map(r => {
+                const isHigh = parseInt(r.targetReach || '0') >= 100000 || daysUntil(r.deadline) <= 3;
+                return (
+                  <div key={r.id} className="bg-white p-4 rounded-2xl border border-amber-100 shadow-2xs space-y-2.5 hover:border-amber-300 transition">
+                    <div className="flex justify-between items-start gap-1">
+                      <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700">{r.category}</span>
+                      <div className="flex items-center gap-1">
+                        {isHigh && <span className="text-[10px] font-black text-rose-700 bg-rose-50 border border-rose-200 px-1.5 py-0.2 rounded">🔥 Gấp</span>}
+                        <button onClick={() => deleteRow(r.id)} className="text-slate-400 hover:text-rose-600 text-xs font-bold cursor-pointer">✕</button>
+                      </div>
+                    </div>
+                    <div className="font-black text-sm text-slate-900 leading-snug">{r.task}</div>
+                    {r.note && <p className="text-xs text-slate-500 font-medium">{r.note}</p>}
+                    <div className="text-xs text-slate-500 font-semibold flex justify-between pt-1">
+                      <span>Target: <strong className="text-emerald-700">{parseInt(r.targetReach || '0').toLocaleString()}</strong></span>
+                      <span>{r.deadline ? `📅 ${r.deadline}` : ''}</span>
+                    </div>
+                    {/* 1-click status pill switcher */}
+                    <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-[10px] font-black">
+                      <span className="text-amber-800 font-bold">{r.progress}%</span>
+                      <div className="flex items-center gap-1">
+                        <button onClick={() => moveTaskStatus(r.id, 'In Progress', '30')} className="bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-200 px-2 py-0.5 rounded-md transition cursor-pointer">
+                          🔄 Đang làm →
+                        </button>
+                        <button onClick={() => moveTaskStatus(r.id, 'Done', '100')} className="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-md transition cursor-pointer">
+                          ✅ Xong
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                  <div className="font-extrabold text-sm text-slate-900">{r.task}</div>
-                  {r.note && <p className="text-xs text-slate-500">{r.note}</p>}
-                  <div className="text-xs text-slate-500 font-semibold flex justify-between">
-                    <span>Target: {parseInt(r.targetReach || '0').toLocaleString()}</span>
-                    <span>{r.deadline ? `📅 ${r.deadline}` : ''}</span>
-                  </div>
-                  <div className="flex justify-between items-center pt-2 border-t border-slate-100 text-xs font-bold">
-                    <span className="text-slate-500">{r.progress}%</span>
-                    <button onClick={() => updateRowInline(r.id, 'status', 'In Progress')} className="text-sky-600 hover:underline">Chuyển sang In Progress →</button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
-          <div className="bg-sky-50/70 p-4 rounded-2xl border border-sky-100 space-y-3">
-            <div className="flex justify-between items-center pb-2 border-b border-sky-200">
-              <h3 className="font-black text-xs text-sky-800 uppercase tracking-wide flex items-center gap-1.5">
-                <span>🔄</span> In Progress ({inProgressTasks})
+          {/* CỘT 2: IN PROGRESS */}
+          <div className="bg-teal-50/50 p-4 rounded-3xl border border-teal-200/80 space-y-3.5 shadow-2xs">
+            <div className="flex justify-between items-center pb-2 border-b border-teal-200/60">
+              <h3 className="font-black text-xs text-teal-900 uppercase tracking-wide flex items-center gap-1.5">
+                <span>🔄</span> Đang Triển Khai ({inProgressTasks})
               </h3>
+              <span className="text-[10px] font-bold text-teal-700 bg-white px-2 py-0.5 rounded-full border border-teal-200">Đang chạy</span>
             </div>
             
             <div className="space-y-3">
               {rows.filter(r => r.status === 'In Progress').map(r => (
-                <div key={r.id} className="bg-white p-4 rounded-xl border border-sky-200 shadow-sm space-y-2">
-                  <div className="flex justify-between items-start">
-                    <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-sky-100 text-sky-800">{r.category}</span>
-                    <button onClick={() => deleteRow(r.id)} className="text-slate-400 hover:text-rose-600 text-xs font-bold">✕</button>
+                <div key={r.id} className="bg-white p-4 rounded-2xl border border-teal-100 shadow-2xs space-y-2.5 hover:border-teal-300 transition">
+                  <div className="flex justify-between items-start gap-1">
+                    <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-teal-50 text-teal-800 border border-teal-100">{r.category}</span>
+                    <button onClick={() => deleteRow(r.id)} className="text-slate-400 hover:text-rose-600 text-xs font-bold cursor-pointer">✕</button>
                   </div>
-                  <div className="font-extrabold text-sm text-slate-900">{r.task}</div>
-                  {r.note && <p className="text-xs text-slate-500">{r.note}</p>}
-                  <div className="text-xs text-slate-500 font-semibold flex justify-between">
-                    <span>Target: {parseInt(r.targetReach || '0').toLocaleString()}</span>
+                  <div className="font-black text-sm text-slate-900 leading-snug">{r.task}</div>
+                  {r.note && <p className="text-xs text-slate-500 font-medium">{r.note}</p>}
+                  <div className="text-xs text-slate-500 font-semibold flex justify-between pt-1">
+                    <span>Target: <strong className="text-emerald-700">{parseInt(r.targetReach || '0').toLocaleString()}</strong></span>
                     <span>{r.deadline ? `📅 ${r.deadline}` : ''}</span>
                   </div>
-                  <div className="flex justify-between items-center pt-2 border-t border-slate-100 text-xs font-bold">
-                    <span className="text-sky-700">{r.progress}%</span>
-                    <button onClick={() => { updateRowInline(r.id, 'status', 'Done'); updateRowInline(r.id, 'progress', '100'); }} className="text-emerald-600 hover:underline">Hoàn thành ✓</button>
+                  {/* 1-click status pill switcher */}
+                  <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-[10px] font-black">
+                    <span className="text-teal-700 font-bold">{r.progress}%</span>
+                    <div className="flex items-center gap-1">
+                      <button onClick={() => moveTaskStatus(r.id, 'Planning', '0')} className="bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 px-2 py-0.5 rounded-md transition cursor-pointer">
+                        ← ⏳ Lên KH
+                      </button>
+                      <button onClick={() => moveTaskStatus(r.id, 'Done', '100')} className="bg-emerald-600 hover:bg-emerald-700 text-white px-2 py-0.5 rounded-md transition cursor-pointer shadow-2xs">
+                        ✅ Hoàn thành ✓
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="bg-emerald-50/70 p-4 rounded-2xl border border-emerald-100 space-y-3">
+          {/* CỘT 3: DONE */}
+          <div className="bg-emerald-50/60 p-4 rounded-3xl border border-emerald-200 space-y-3.5 shadow-2xs">
             <div className="flex justify-between items-center pb-2 border-b border-emerald-200">
-              <h3 className="font-black text-xs text-emerald-800 uppercase tracking-wide flex items-center gap-1.5">
-                <span>✅</span> Done ({completedTasks})
+              <h3 className="font-black text-xs text-emerald-900 uppercase tracking-wide flex items-center gap-1.5">
+                <span>✅</span> Đã Hoàn Thành ({completedTasks})
               </h3>
+              <span className="text-[10px] font-bold text-emerald-700 bg-white px-2 py-0.5 rounded-full border border-emerald-200">100% KPI</span>
             </div>
             
             <div className="space-y-3">
               {rows.filter(r => r.status === 'Done').map(r => (
-                <div key={r.id} className="bg-white p-4 rounded-xl border border-emerald-200 shadow-sm space-y-2 opacity-90">
-                  <div className="flex justify-between items-start">
-                    <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">{r.category}</span>
-                    <button onClick={() => deleteRow(r.id)} className="text-slate-400 hover:text-rose-600 text-xs font-bold">✕</button>
+                <div key={r.id} className="bg-white p-4 rounded-2xl border border-emerald-100 shadow-2xs space-y-2.5 hover:border-emerald-300 transition opacity-95">
+                  <div className="flex justify-between items-start gap-1">
+                    <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 border border-emerald-200">{r.category}</span>
+                    <button onClick={() => deleteRow(r.id)} className="text-slate-400 hover:text-rose-600 text-xs font-bold cursor-pointer">✕</button>
                   </div>
-                  <div className="font-extrabold text-sm text-slate-900 line-through">{r.task}</div>
-                  {r.note && <p className="text-xs text-slate-500">{r.note}</p>}
-                  <div className="text-xs text-slate-500 font-semibold flex justify-between">
+                  <div className="font-black text-sm text-slate-900 line-through leading-snug">{r.task}</div>
+                  {r.note && <p className="text-xs text-slate-500 font-medium">{r.note}</p>}
+                  <div className="text-xs text-slate-500 font-semibold flex justify-between pt-1">
                     <span>Target: {parseInt(r.targetReach || '0').toLocaleString()}</span>
                     <span>{r.deadline ? `📅 ${r.deadline}` : ''}</span>
                   </div>
-                  <div className="flex justify-between items-center pt-2 border-t border-slate-100 text-xs font-bold">
-                    <span className="text-emerald-600 font-black">✓ 100% Hoàn thành</span>
+                  {/* 1-click status pill switcher */}
+                  <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-[10px] font-black">
+                    <span className="text-emerald-700 font-black">✓ 100% Hoàn thành</span>
+                    <div className="flex items-center gap-1">
+                      <button onClick={() => moveTaskStatus(r.id, 'In Progress', '50')} className="bg-slate-100 hover:bg-slate-200 text-slate-600 px-2 py-0.5 rounded-md transition cursor-pointer">
+                        ↺ Mở lại
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
